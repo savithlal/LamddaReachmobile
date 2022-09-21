@@ -1,7 +1,7 @@
 {
-  "HOST": "HOST",
+  "HOST": "reachmobileapi-env.eba-pniywgje.us-east-1.elasticbeanstalk.com",
   "USER": "USER",
   "PASSWORD": "PASSWORD",
   "DB": "DB",
-  "PORT": "PORT"
+  "PORT": "8080"
 }
