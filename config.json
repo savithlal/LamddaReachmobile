@@ -1,7 +1,7 @@
 {
-  "HOST": "reachmobileapi-env.eba-pniywgje.us-east-1.elasticbeanstalk.com",
-  "USER": "USER",
-  "PASSWORD": "PASSWORD",
-  "DB": "DB",
-  "PORT": "8080"
+  "HOST": "reach-nevpro-bitrix-database-1.ceinyc5hvpla.us-east-1.rds.amazonaws.com",
+  "USER": "crmflow",
+  "PASSWORD": "crm@flow",
+  "DB": "Dev",
+  "PORT": "3306"
 }
