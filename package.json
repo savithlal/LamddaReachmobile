@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "npm install -g --force nodemon",
+    "server": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Ayan",
@@ -13,7 +14,6 @@
     "axios": "^0.27.2",
     "express": "^4.18.1",
     "mysql": "^2.18.1",
-    "node-sass": "^7.0.1",
     "phpunserialize": "^1.1.0"
     
   },
