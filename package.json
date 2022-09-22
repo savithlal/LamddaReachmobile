@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js",
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Ayan",
@@ -13,7 +13,9 @@
     "axios": "^0.27.2",
     "express": "^4.18.1",
     "mysql": "^2.18.1",
+    "node-sass": "^7.0.1",
     "phpunserialize": "^1.1.0"
+    
   },
   "devDependencies": {
     "nodemon": "^2.0.19"
