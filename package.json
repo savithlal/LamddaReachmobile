@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "npm install -g nodemon",
+    "start": "sudo npm install -g --force nodemon",
     "server": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
