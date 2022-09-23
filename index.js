@@ -7,6 +7,6 @@ app.use(express.json());
 
 app.use("/contact", contactRoutes);
 
-app.listen(config.PORT || 8080);
+app.listen(8080);
 
 module.exports = app;
