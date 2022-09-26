@@ -1,12 +1,18 @@
 var mysql = require("mysql");
 const config = require("./config.json");
-var connection = mysql.createConnection({
+var pool = mysql.createPool({
+  connectionLimit: 10,
   host: config.HOST,
   user: config.USER,
   password: config.PASSWORD,
   database: config.DB,
+  port: config.DB_PORT,
 });
-connection.connect(function (error) {
-  if (!!error) console.log(error);
+pool.getConnection(function (error, connection) {
+  if (!!error) {
+    console.log(error);
+    return false;
+  }
+  connection.release();
 });
-module.exports = connection;
+module.exports = pool;

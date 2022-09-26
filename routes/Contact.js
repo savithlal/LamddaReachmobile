@@ -19,21 +19,26 @@ router.put("/", async function (req, res, next) {
     audit_business_process: "contact_id",
   };
   const id = req.body.CONTACT_ID;
-  const fields = req.body;
-  delete fields["CONTACT_ID"];
-  const misFields = Object.assign({}, fields);
-  if (misFields["EMAIL"] !== undefined) delete misFields.EMAIL;
-  if (misFields["PHONE"] !== undefined) delete misFields.PHONE;
   if (id == undefined) {
     controller.__return(res, {}, "CONTACT_ID_IS_REQUIRED", 422);
     return false;
   }
-  if (!fields || !Object.keys(fields).length) {
+  var tempFields = req.body;
+  var misFields = {};
+  delete tempFields["CONTACT_ID"];
+  if (!req.body || !Object.keys(req.body).length) {
     controller.__return(res, {}, "REQUIRED_FIELD_MISSING", 422);
     return false;
   }
+  var temp = {};
+  Object.keys(tempFields).forEach(async (field) => {
+    await (temp[field.toLowerCase()] = tempFields[field]);
+  });
+  var fields = temp;
+  var newFields = JSON.stringify(Object.keys(fields)).toLowerCase();
+  newFields = newFields.replace(/^\[(.+)\]$/, "$1");
 
-  const mapTables = async (tables) => {
+  const mapTables = async (tables, fields) => {
     var data = [];
     var auditData = [];
     let contactData = await controller.getContact(res, id, true);
@@ -75,8 +80,16 @@ router.put("/", async function (req, res, next) {
       });
     });
   };
-
-  mapTables(tables)
+  var query = `SELECT FIELDS_NAME as FIELD,LABEL_NAME as LABEL FROM contact_updater WHERE LABEL_NAME IN (${newFields})`;
+  await controller
+    .mapFields(res, query, fields)
+    .then(async (response) => {
+      fields = response.data;
+      misFields = Object.assign({}, response.data);
+      if (misFields["EMAIL"] !== undefined) delete misFields.EMAIL;
+      if (misFields["PHONE"] !== undefined) delete misFields.PHONE;
+    })
+    .then(async () => await mapTables(tables, fields))
     .then(async (response) => {
       let data = response.data;
       let auditData = response.auditData;
@@ -104,11 +117,11 @@ router.put("/", async function (req, res, next) {
       controller.__return(res, response, "RECORD_UPDATED_SUCCESSFULLY", 200);
     })
     .catch((err) => {
-      controller.__return(res, {}, "EXECUTION_ERROR", 500);
+      controller.__return(res, { err: err }, "EXECUTION_ERROR", 500);
     });
 });
 
-router.post("/", function (req, res, next) {
+router.post("/", async function (req, res, next) {
   const date = new Date().toISOString().slice(0, 19).replace("T", " ");
   const tables = {
     b_crm_contact: [
@@ -158,6 +171,7 @@ router.post("/", function (req, res, next) {
       ASSIGNED_BY_ID: "",
       HAS_EMAIL: "Y",
       HAS_PHONE: "Y",
+      DATE_CREATE: date,
     },
     b_crm_dynamic_items_179: {
       CREATED_BY: 1,
@@ -200,46 +214,19 @@ router.post("/", function (req, res, next) {
     "LAST_NAME",
     "EMAIL",
     "PHONE",
-    "UF_CRM_1337999932852",
+    "UF_CRM_1337999932852", // BRAND NAME
   ];
-  const fields = req.body;
+  var tempFields = req.body;
+  var temp = {};
+  Object.keys(tempFields).forEach(async (field) => {
+    await (temp[field.toLowerCase()] = tempFields[field]);
+  });
+  var fields = temp;
   const misFields = Object.assign({}, fields);
-  delete misFields["EMAIL"];
-  delete misFields["PHONE"];
-  controller
-    .checkFields(fields, reqFields)
-    .then(async (errorFields) => {
-      return await controller.getHead(res, fields, errorFields);
-    })
-    .then(async (head) => {
-      staticValues.b_crm_contact.ASSIGNED_BY_ID = head;
-      return await mapTables(tables, head);
-    })
-    .then(async (response) => {
-      return await controller.buildSql(response, fields, staticValues);
-    })
-    .then(async (response) => {
-      await contactSql(response.b_crm_contact, fields);
-      return response;
-    })
-    .then(async (response) => {
-      return await controller.execute(response, true, {
-        search: "--CONTACT_ID--",
-        replace: contactId,
-      });
-    })
-    .then(async (response) => {
-      controller.__return(
-        res,
-        { CONTACT_ID: contactId },
-        "RECORD_CREATED_SUCCESSFULLY",
-        201
-      );
-    })
-    .catch((err) => {
-      controller.__return(res, {}, "EXECUTION_ERROR", 500);
-    });
-
+  delete misFields["email"];
+  delete misFields["phone"];
+  var newFields = JSON.stringify(Object.keys(fields)).toLowerCase();
+  newFields = newFields.replace(/^\[(.+)\]$/, "$1");
   const mapTables = (tables, head) => {
     return new Promise(async (resolve, reject) => {
       for (let table in tables) {
@@ -284,6 +271,44 @@ router.post("/", function (req, res, next) {
       });
     });
   };
+  var query = `SELECT FIELDS_NAME as FIELD,LABEL_NAME as LABEL FROM contact_updater WHERE LABEL_NAME IN (${newFields})`;
+  await controller
+    .mapFields(res, query, fields)
+    .then(async (response) => {
+      fields = response.data;
+      return await controller.checkFields(res, fields, reqFields, response);
+    })
+    .then(async (errorFields) => {
+      return await controller.getHead(res, fields, errorFields);
+    })
+    .then(async (head) => {
+      staticValues.b_crm_contact.ASSIGNED_BY_ID = head;
+      return await mapTables(tables, head);
+    })
+    .then(async (response) => {
+      return await controller.buildSql(response, fields, staticValues);
+    })
+    .then(async (response) => {
+      await contactSql(response.b_crm_contact, fields);
+      return response;
+    })
+    .then(async (response) => {
+      return await controller.execute(response, true, {
+        search: "--CONTACT_ID--",
+        replace: contactId,
+      });
+    })
+    .then(async (response) => {
+      controller.__return(
+        res,
+        { CONTACT_ID: contactId },
+        "RECORD_CREATED_SUCCESSFULLY",
+        201
+      );
+    })
+    .catch((err) => {
+      controller.__return(res, { err: err }, "EXECUTION_ERROR", 500);
+    });
 });
 
 module.exports = router;

@@ -3,5 +3,7 @@
   "USER": "crmflow",
   "PASSWORD": "crm@flow",
   "DB": "Dev",
-  "PORT": "3306"
+  "DB_PORT": "3306",
+  "APP_PORT": "8080",
+  "WORKFLOW_URL": "https://example.com"
 }

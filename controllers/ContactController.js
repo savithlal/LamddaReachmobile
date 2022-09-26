@@ -22,9 +22,7 @@ const sql = async (
       if (data[table].length) {
         var sql = `UPDATE ${table} SET `;
         for (let field in data[table]) {
-          sql += `${data[table][field]}="${connection.escape(
-            fields[data[table][field]]
-          )}",`;
+          sql += `${data[table][field]}="${fields[data[table][field]]}",`;
         }
         sql = sql.replace(/,+$/, "");
         sql += ` WHERE ${tables[table]}=${id}`;
@@ -40,11 +38,9 @@ const sql = async (
           table == "b_crm_dynamic_items_179" ? "" : ", type"
         }) VALUES `;
         for (let field in auditData[table]) {
-          sql += `(${id},"${connection.escape(field)}","${connection.escape(
-            auditData[table][field]
-          )}","${connection.escape(fields[field])}","${connection.escape(
-            contactData["EMAIL"]
-          )}","${connection.escape(contactData["FULL_NAME"])}","${
+          sql += `(${id},"${field}","${auditData[table][field]}","${
+            fields[field]
+          }","${contactData["EMAIL"]}","${contactData["FULL_NAME"]}","${
             labels[field] ?? field
           }"${table == "b_crm_dynamic_items_179" ? "" : ',"api"'}),`;
         }
@@ -122,7 +118,7 @@ const getHead = async (res, fields, errorFields) => {
 
 const getContact = (res, id, flag) => {
   return new Promise((resolve, reject) => {
-    let query = `SELECT contact.ID,NAME,FULL_NAME,LAST_NAME,multi.VALUE as EMAIL FROM b_crm_contact contact INNER JOIN b_crm_field_multi multi ON contact.ID = multi.ELEMENT_ID WHERE contact.ID=${id} AND multi.TYPE_ID="EMAIL" LIMIT 1`;
+    let query = `SELECT contact.ID,CONCAT(NAME," ",LAST_NAME) AS FULL_NAME,NAME,LAST_NAME,multi.VALUE as EMAIL FROM b_crm_contact contact INNER JOIN b_crm_field_multi multi ON contact.ID = multi.ELEMENT_ID WHERE contact.ID=${id} AND multi.TYPE_ID="EMAIL" LIMIT 1`;
     connection.query(query, function (err, rows) {
       if (err) __return(res, {}, JSON.stringify({ Error: err }), 400);
       else {
@@ -144,7 +140,7 @@ const checkFields = async (fields, reqFields) => {
     for (var i = 0; i < fields.length; i++) {
       let field = fields[i];
       for (key in reqFields) {
-        if (reqFields[key] == field) {
+        if (reqFields[key] == field.toUpperCase()) {
           reqFields.splice(key, 1);
           break;
         }
@@ -235,6 +231,33 @@ const getLabels = async (fields) => {
   });
 };
 
+const mapFields = async (res, query, fields) => {
+  return new Promise((resolve, reject) => {
+    connection.query(query, (err, rows) => {
+      if (err) reject(err);
+      else {
+        var codes = {};
+        for (var i in rows) {
+          codes[rows[i].LABEL] = rows[i].FIELD;
+        }
+        if (Object.keys(codes).length !== Object.keys(fields).length) {
+          var errFields = [];
+          for (var i in fields) {
+            if (!codes[i]) errFields.push(i);
+          }
+          __return(res, {}, "UNKNOWN_FIELD: " + errFields.toString(), 422);
+        } else {
+          var data = {};
+          for (i in rows) {
+            data[rows[i].FIELD.toUpperCase()] = fields[rows[i].LABEL];
+          }
+          resolve({ status: true, data: data });
+        }
+      }
+    });
+  });
+};
+
 module.exports = {
   sql,
   execute,
@@ -245,4 +268,5 @@ module.exports = {
   buildSql,
   auditFields,
   getLabels,
+  mapFields,
 };

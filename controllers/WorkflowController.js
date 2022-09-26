@@ -2,6 +2,7 @@ var connection = require("../db");
 const unserialize = require("phpunserialize");
 const controller = require("../controllers/ContactController");
 var axios = require("axios").default;
+var config = require("../config.json");
 
 const getBusinessProcess = async (id, fields) => {
   let fieldCopy = fields;
@@ -11,7 +12,7 @@ const getBusinessProcess = async (id, fields) => {
   return new Promise(async (resolve, reject) => {
     await getData(id, query, fieldCopy, fields).then(async (data) => {
       await axios
-        .post("http://localhost/code/workflowTrigger.php", data)
+        .post(config.WORKFLOW_URL, data)
         .then((response) => resolve(response.data))
         .catch((err) => reject(err));
     });
@@ -49,8 +50,10 @@ const mapWorkflow = async (id, data, fieldCopy) => {
       if (field) {
         let str = `"${fieldCopy[data[key].Field]}" ${operator}= "${field}"`;
         try {
-          if (eval(str) === true)
-            terminateData.push(await getWorkflow(id, processId));
+          if (eval(str) === true) {
+            var data = await getWorkflow(id, processId);
+            if (data.length) terminateData.push();
+          }
         } catch (err) {
           reject(err);
         }
