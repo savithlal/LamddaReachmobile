@@ -11,10 +11,8 @@ const getBusinessProcess = async (id, fields) => {
   var query = `SELECT BP_ID,Operator,Field FROM terminate_business_process WHERE Field IN (${fields});`;
   return new Promise(async (resolve, reject) => {
     await getData(id, query, fieldCopy, fields).then(async (data) => {
-      await axios
-        .post(config.WORKFLOW_URL, data)
-        .then((response) => resolve(response.data))
-        .catch((err) => reject(err));
+      resolve();
+      axios.post(config.WORKFLOW_URL, data).catch((err) => console.log(err));
     });
   });
 };
