@@ -50,26 +50,18 @@ const sql = async (
     }
     if (fields["PHONE"] !== undefined) {
       sqlData.push(
-        `UPDATE b_crm_field_multi SET VALUE="${connection.escape(
-          fields.PHONE
-        )}" WHERE ELEMENT_ID=${id} AND TYPE_ID="PHONE"`
+        `UPDATE b_crm_field_multi SET VALUE="${fields.PHONE}" WHERE ELEMENT_ID=${id} AND TYPE_ID="PHONE"`
       );
       sqlData.push(
-        `UPDATE b_crm_dp_comm_mcd SET VALUE="${connection.escape(
-          fields.PHONE
-        )}" WHERE ENTITY_ID=${id} AND TYPE="PHONE"`
+        `UPDATE b_crm_dp_comm_mcd SET VALUE="${fields.PHONE}" WHERE ENTITY_ID=${id} AND TYPE="PHONE"`
       );
     }
     if (fields["EMAIL"] !== undefined) {
       sqlData.push(
-        `UPDATE b_crm_field_multi SET VALUE="${connection.escape(
-          fields.EMAIL
-        )}" WHERE ELEMENT_ID=${id} AND TYPE_ID="EMAIL"`
+        `UPDATE b_crm_field_multi SET VALUE="${fields.EMAIL}" WHERE ELEMENT_ID=${id} AND TYPE_ID="EMAIL"`
       );
       sqlData.push(
-        `UPDATE b_crm_dp_comm_mcd SET VALUE="${connection.escape(
-          fields.EMAIL
-        )}" WHERE ENTITY_ID=${id} AND TYPE="EMAIL"`
+        `UPDATE b_crm_dp_comm_mcd SET VALUE="${fields.EMAIL}" WHERE ENTITY_ID=${id} AND TYPE="EMAIL"`
       );
     }
     resolve(sqlData);
@@ -160,17 +152,11 @@ const buildSql = (response, fields, staticValues) => {
           table
         ].toString()}) VALUES (`;
         if (table == "b_crm_field_multi") {
-          sql += `"CONTACT","--CONTACT_ID--","PHONE","WORK","PHONE_WORK",${connection.escape(
-            fields.PHONE
-          )}),
-          ("CONTACT","--CONTACT_ID--","EMAIL","WORK","EMAIL_WORK",${connection.escape(
-            fields.EMAIL
-          )}`;
+          sql += `"CONTACT","--CONTACT_ID--","PHONE","WORK","PHONE_WORK",${fields.PHONE}),
+          ("CONTACT","--CONTACT_ID--","EMAIL","WORK","EMAIL_WORK",${fields.EMAIL}`;
         } else if (table == "b_crm_dp_comm_mcd") {
-          sql += `3,"--CONTACT_ID--","PHONE",${connection.escape(
-            fields.PHONE
-          )}),
-          (3,"--CONTACT_ID--","EMAIL",${connection.escape(fields.EMAIL)}`;
+          sql += `3,"--CONTACT_ID--","PHONE",${fields.PHONE}),
+          (3,"--CONTACT_ID--","EMAIL",${fields.EMAIL}`;
         } else {
           for (let key in tableFields) {
             var field = tableFields[key];
