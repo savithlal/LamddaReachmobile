@@ -76,7 +76,11 @@ const getData = async (id, query, fieldCopy, fields) => {
     var response = await auditWorkflow(id, startData);
     await controller.execute([response]);
     resolve({
-      response: { terminateData: terminateData, startData: startData },
+      response: {
+        terminateData: terminateData,
+        startData: startData,
+        contactId: id,
+      },
     });
   });
 };
