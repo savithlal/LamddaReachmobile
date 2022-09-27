@@ -54,7 +54,7 @@ const mapWorkflow = async (id, workflowData, fieldCopy) => {
           try {
             if (eval(str) === true) {
               var data = await getWorkflow(id, processId);
-              if (data.length) terminateData.push();
+              terminateData.push();
             }
           } catch (err) {
             reject(err);
