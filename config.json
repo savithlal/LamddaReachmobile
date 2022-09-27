@@ -4,6 +4,7 @@
   "PASSWORD": "crm@flow",
   "DB": "Dev",
   "DB_PORT": "3306",
-  "APP_PORT": "8080",
-  "WORKFLOW_URL": "https://example.com"
+  "APP_PORT": 8080,
+  "WORKFLOW_URL": "https://crm-flow.reachmobile.com/local/contactApi/response.php",
+  "TOKEN_SECRET": "4xskwKdXftBDblD3"
 }

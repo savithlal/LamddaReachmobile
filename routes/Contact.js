@@ -3,13 +3,14 @@ var router = express.Router();
 var connection = require("../db");
 const controller = require("../controllers/ContactController");
 const workflow = require("../controllers/WorkflowController");
+const auth = require("./Verify");
 
-router.get("/:id", async function (req, res, next) {
+router.get("/:id", auth, async function (req, res) {
   const id = req.params.id;
   await controller.getContact(res, id);
 });
 
-router.put("/", async function (req, res, next) {
+router.put("/", auth, async function (req, res) {
   const tables = {
     b_uts_crm_contact: "VALUE_ID",
     b_crm_dynamic_items_179: "CONTACT_ID",
@@ -121,7 +122,7 @@ router.put("/", async function (req, res, next) {
     });
 });
 
-router.post("/", async function (req, res, next) {
+router.post("/", auth, async function (req, res) {
   const date = new Date().toISOString().slice(0, 19).replace("T", " ");
   const tables = {
     b_crm_contact: [
