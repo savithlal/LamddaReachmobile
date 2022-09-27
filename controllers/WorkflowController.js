@@ -77,9 +77,9 @@ const getData = async (id, query, fieldCopy, fields) => {
     await controller.execute([response]);
     resolve({
       response: {
+        contactId: id,
         terminateData: terminateData,
         startData: startData,
-        contactId: id,
       },
     });
   });
