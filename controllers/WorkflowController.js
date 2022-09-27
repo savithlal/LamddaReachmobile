@@ -38,24 +38,27 @@ const getWorkflow = async (id, processId) => {
   });
 };
 
-const mapWorkflow = async (id, data, fieldCopy) => {
+const mapWorkflow = async (id, workflowData, fieldCopy) => {
   var terminateData = [];
   return new Promise(async (resolve, reject) => {
+    var data = workflowData;
     for (let key in data) {
-      let processId = data[key].BP_ID,
-        operator = data[key].Operator;
-      var temp = unserialize(operator);
-      operator = temp[0];
-      let field = temp[1].split("'")[1];
-      if (field) {
-        let str = `"${fieldCopy[data[key].Field]}" ${operator}= "${field}"`;
-        try {
-          if (eval(str) === true) {
-            var data = await getWorkflow(id, processId);
-            if (data.length) terminateData.push();
+      var processId = data[key] ? data[key].BP_ID : 0,
+        operator = data[key] ? data[key].Operator : 0;
+      if (operator) {
+        var temp = unserialize(operator);
+        operator = temp[0];
+        let field = temp[1].split("'")[1];
+        if (field) {
+          let str = `"${fieldCopy[data[key].Field]}" ${operator}= "${field}"`;
+          try {
+            if (eval(str) === true) {
+              var data = await getWorkflow(id, processId);
+              if (data.length) terminateData.push();
+            }
+          } catch (err) {
+            reject(err);
           }
-        } catch (err) {
-          reject(err);
         }
       }
     }
