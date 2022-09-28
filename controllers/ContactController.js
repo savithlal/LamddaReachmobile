@@ -112,7 +112,7 @@ const getContact = (res, id, flag) => {
   return new Promise((resolve, reject) => {
     let query = `SELECT contact.ID,CONCAT(NAME," ",LAST_NAME) AS FULL_NAME,NAME,LAST_NAME,multi.VALUE as EMAIL FROM b_crm_contact contact INNER JOIN b_crm_field_multi multi ON contact.ID = multi.ELEMENT_ID WHERE contact.ID=${id} AND multi.TYPE_ID="EMAIL" LIMIT 1`;
     connection.query(query, function (err, rows) {
-      if (err) __return(res, {}, JSON.stringify({ Error: err }), 400);
+      if (err) __return(res, {}, "EXECUTION_ERROR", 500);
       else {
         flag
           ? !rows.length
@@ -126,8 +126,8 @@ const getContact = (res, id, flag) => {
   });
 };
 
-const checkFields = async (fields, reqFields) => {
-  return new Promise((resolve, reject) => {
+const checkFields = async (res, fields, reqFields) => {
+  return new Promise(async (resolve, reject) => {
     fields = Object.keys(fields);
     for (var i = 0; i < fields.length; i++) {
       let field = fields[i];
@@ -138,6 +138,7 @@ const checkFields = async (fields, reqFields) => {
         }
       }
     }
+    await validate(res, fields, reqFields);
     resolve(reqFields);
   });
 };
@@ -244,6 +245,23 @@ const mapFields = async (res, query, fields) => {
   });
 };
 
+const validate = async (res, fields, reqFields) => {
+  return new Promise((resolve, reject) => {
+    var data = [];
+    reqFields.map((field) => {
+      if (fields[field] !== undefined && fields[field] === "") {
+        var temp = field;
+        if (field == "UF_CRM_1337999932852") temp = "BRAND_NAME";
+        if (field == "NAME") temp = "FIRSTNAME";
+        data.push(temp);
+      }
+    });
+    if (data.length)
+      __return(res, {}, "REQUIRED_FIELDS: " + data.toString(), 422);
+    else resolve(data);
+  });
+};
+
 module.exports = {
   sql,
   execute,
@@ -255,4 +273,5 @@ module.exports = {
   auditFields,
   getLabels,
   mapFields,
+  validate,
 };

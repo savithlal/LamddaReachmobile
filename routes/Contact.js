@@ -86,6 +86,8 @@ router.put("/", auth, async function (req, res) {
     .mapFields(res, query, fields)
     .then(async (response) => {
       fields = response.data;
+      const reqFields = ["NAME", "LAST_NAME", "EMAIL", "PHONE", "UF_CRM_1337999932852"];
+      await controller.validate(res, fields, reqFields);
       misFields = Object.assign({}, response.data);
       if (misFields["EMAIL"] !== undefined) delete misFields.EMAIL;
       if (misFields["PHONE"] !== undefined) delete misFields.PHONE;
@@ -118,7 +120,7 @@ router.put("/", auth, async function (req, res) {
       controller.__return(res, response, "RECORD_UPDATED_SUCCESSFULLY", 200);
     })
     .catch((err) => {
-      controller.__return(res, { err: err }, "EXECUTION_ERROR", 500);
+      controller.__return(res, {}, "EXECUTION_ERROR", 500);
     });
 });
 
@@ -215,7 +217,7 @@ router.post("/", auth, async function (req, res) {
     "LAST_NAME",
     "EMAIL",
     "PHONE",
-    "UF_CRM_1337999932852", // BRAND NAME
+    "UF_CRM_1337999932852",
   ];
   var tempFields = req.body;
   var temp = {};
@@ -308,7 +310,7 @@ router.post("/", auth, async function (req, res) {
       );
     })
     .catch((err) => {
-      controller.__return(res, { err: err }, "EXECUTION_ERROR", 500);
+      controller.__return(res, {}, "EXECUTION_ERROR", 500);
     });
 });
 
