@@ -5,6 +5,12 @@
   "DB": "Dev",
   "DB_PORT": "3306",
   "APP_PORT": 8080,
-  "WORKFLOW_URL": "https://crm-flow.reachmobile.com/local/contactApi/response.php",
+  "BRANDS": {
+    "reach": "https://reachmobile.digiclave.com/rest/1/ua1t7bzxzl9a6yh0/"
+  },
+  "ENDPOINTS": {
+    "START": "bizproc.workflow.start",
+    "TERMINATE": "bizproc.workflow.terminate"
+  },
   "TOKEN_SECRET": "4xskwKdXftBDblD3"
 }

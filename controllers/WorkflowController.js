@@ -1,7 +1,7 @@
 var connection = require("../db");
 const unserialize = require("phpunserialize");
 const controller = require("../controllers/ContactController");
-var axios = require("axios").default;
+const axios = require("axios").default;
 var config = require("../config.json");
 
 const getBusinessProcess = async (id, fields) => {
@@ -11,7 +11,8 @@ const getBusinessProcess = async (id, fields) => {
   var query = `SELECT BP_ID,Operator,Field FROM terminate_business_process WHERE Field IN (${fields});`;
   return new Promise(async (resolve, reject) => {
     await getData(id, query, fieldCopy, fields).then(async (data) => {
-      axios.post(config.WORKFLOW_URL, data).catch((err) => console.log(err));
+      await startWorkflow(data);
+      await terminateWorkflow(data);
       resolve();
     });
   });
@@ -73,7 +74,7 @@ const getData = async (id, query, fieldCopy, fields) => {
     if (data.length) terminateData = await mapWorkflow(id, data, fieldCopy);
     fields = fields.replace(new RegExp(",", "g"), "|");
     query = `SELECT bp_id,NAME FROM config cf INNER JOIN b_bp_workflow_template wf ON cf.bp_id = wf.ID WHERE cf.field REGEXP ${fields}`;
-    startData = await startWorkflow(query);
+    startData = await getStartWorkflow(query);
     var response = await auditWorkflow(id, startData);
     await controller.execute([response]);
     resolve({
@@ -86,7 +87,7 @@ const getData = async (id, query, fieldCopy, fields) => {
   });
 };
 
-const startWorkflow = async (query) => {
+const getStartWorkflow = async (query) => {
   return new Promise((resolve, reject) => {
     connection.query(query, function (err, rows) {
       if (err) reject(err);
@@ -112,6 +113,38 @@ const auditWorkflow = async (id, data) => {
     }
     query = query.replace(/,+$/, "");
     resolve(query);
+  });
+};
+
+const startWorkflow = (data) => {
+  return new Promise((resolve, reject) => {
+    var startData = data.response.startData;
+    var id = data.response.contactId;
+    var api = config.BRANDS.reach + config.ENDPOINTS.START;
+    Object.keys(startData).map((processId) => {
+      var params = {
+        TEMPLATE_ID: processId,
+        DOCUMENT_ID: ["crm", "CCrmDocumentContact", "CONTACT_" + id],
+        PARAMETERS: null,
+      };
+      axios.post(api, params).catch((err) => console.log(err));
+      console.log(api, params);
+    });
+    resolve(true);
+  });
+};
+
+const terminateWorkflow = (data) => {
+  return new Promise((resolve, reject) => {
+    var terminateData = data.response.terminateData;
+    var api = config.BRANDS.reach + config.ENDPOINTS.TERMINATE;
+    Object.keys(terminateData).map((key) => {
+      var params = {
+        ID: terminateData[0][key].ID,
+      };
+      axios.post(api, params).catch((err) => console.log(err));
+    });
+    resolve(true);
   });
 };
 
