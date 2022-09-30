@@ -4,15 +4,15 @@ const controller = require("../controllers/ContactController");
 const axios = require("axios").default;
 var config = require("../config.json");
 
-const getBusinessProcess = async (id, fields) => {
+const getBusinessProcess = async (id, fields, brand) => {
   let fieldCopy = fields;
   fields = JSON.stringify(Object.keys(fields));
   fields = fields.replace(/^\[(.+)\]$/, "$1");
   var query = `SELECT BP_ID,Operator,Field FROM terminate_business_process WHERE Field IN (${fields});`;
   return new Promise(async (resolve, reject) => {
     await getData(id, query, fieldCopy, fields).then(async (data) => {
-      await startWorkflow(data);
-      await terminateWorkflow(data);
+      await startWorkflow(data, brand);
+      await terminateWorkflow(data, brand);
       resolve();
     });
   });
@@ -116,11 +116,12 @@ const auditWorkflow = async (id, data) => {
   });
 };
 
-const startWorkflow = (data) => {
+const startWorkflow = (data, brand) => {
   return new Promise((resolve, reject) => {
     var startData = data.response.startData;
     var id = data.response.contactId;
-    var api = config.BRANDS.reach + config.ENDPOINTS.START;
+    var api =
+      config.BRANDS[brand] ?? config.BRANDS.default + config.ENDPOINTS.START;
     Object.keys(startData).map((processId) => {
       var params = {
         TEMPLATE_ID: processId,
@@ -128,23 +129,24 @@ const startWorkflow = (data) => {
         PARAMETERS: null,
       };
       axios.post(api, params).catch((err) => console.log(err));
-      console.log(api, params);
     });
-    resolve(true);
+    resolve();
   });
 };
 
-const terminateWorkflow = (data) => {
+const terminateWorkflow = (data, brand) => {
   return new Promise((resolve, reject) => {
     var terminateData = data.response.terminateData;
-    var api = config.BRANDS.reach + config.ENDPOINTS.TERMINATE;
+    var api =
+      config.BRANDS[brand] ??
+      config.BRANDS.default + config.ENDPOINTS.TERMINATE;
     Object.keys(terminateData).map((key) => {
       var params = {
         ID: terminateData[0][key].ID,
       };
       axios.post(api, params).catch((err) => console.log(err));
     });
-    resolve(true);
+    resolve();
   });
 };
 

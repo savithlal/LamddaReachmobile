@@ -184,7 +184,7 @@ const buildSql = (response, fields, staticValues) => {
   });
 };
 
-const auditFields = async (query, fields, labels) => {
+const auditFields = async (query, fields) => {
   let auditData = [];
   return new Promise((resolve, reject) => {
     connection.query(query, function (err, rows) {
@@ -220,7 +220,7 @@ const getLabels = async (fields) => {
 
 const mapFields = async (res, query, fields) => {
   return new Promise((resolve, reject) => {
-    connection.query(query, (err, rows) => {
+    connection.query(query, async (err, rows) => {
       if (err) reject(err);
       else {
         var codes = {};
@@ -235,8 +235,10 @@ const mapFields = async (res, query, fields) => {
           __return(res, {}, "UNKNOWN_FIELD: " + errFields.toString(), 422);
         } else {
           var data = {};
+          var processedData = await processEnumFields(rows, fields);
           for (i in rows) {
-            data[rows[i].FIELD.toUpperCase()] = fields[rows[i].LABEL];
+            data[rows[i].FIELD.toUpperCase()] =
+              processedData[rows[i].FIELD] ?? fields[rows[i].LABEL];
           }
           resolve({ status: true, data: data });
         }
@@ -262,6 +264,43 @@ const validate = async (res, fields, reqFields) => {
   });
 };
 
+const getBrand = async (res, id) => {
+  return new Promise((resolve, reject) => {
+    var query = `SELECT UF_CRM_1337999932852 as BRAND_NAME FROM b_uts_crm_contact WHERE VALUE_ID=${id} LIMIT 1`;
+    connection.query(query, (err, rows) => {
+      if (err) __return(res, {}, "NO_BRAND_FOUND", 422);
+      else resolve(rows[0].BRAND_NAME);
+    });
+  });
+};
+
+const processEnumFields = async (rows, fields) => {
+  var enumFields = {};
+  for (i in rows) {
+    if (rows[i].TYPE == "enumeration")
+      enumFields['"' + rows[i].FIELD + '"'] = '"' + fields[rows[i].LABEL] + '"';
+  }
+  var processed = [];
+  if (Object.keys(enumFields).length)
+    processed = await mapEnumFields(enumFields);
+  return processed;
+};
+
+const mapEnumFields = (enumData) => {
+  return new Promise((resolve, reject) => {
+    var fields = Object.keys(enumData).toString();
+    var values = Object.values(enumData).toString();
+    var query = `SELECT f.FIELD_NAME,e.ID from b_user_field_enum e INNER JOIN b_user_field f ON e.user_field_id = f.id WHERE f.field_name IN (${fields}) and value IN (${values})`;
+    connection.query(query, (err, rows) => {
+      var processedData = [];
+      for (i in rows) {
+        processedData[rows[i].FIELD_NAME] = rows[i].ID;
+      }
+      resolve(processedData);
+    });
+  });
+};
+
 module.exports = {
   sql,
   execute,
@@ -274,4 +313,5 @@ module.exports = {
   getLabels,
   mapFields,
   validate,
+  getBrand,
 };

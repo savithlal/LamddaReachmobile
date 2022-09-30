@@ -38,7 +38,7 @@ router.put("/", auth, async function (req, res) {
   var fields = temp;
   var newFields = JSON.stringify(Object.keys(fields)).toLowerCase();
   newFields = newFields.replace(/^\[(.+)\]$/, "$1");
-
+  const brand = await controller.getBrand(res, id);
   const mapTables = async (tables, fields) => {
     var data = [];
     var auditData = [];
@@ -81,12 +81,18 @@ router.put("/", auth, async function (req, res) {
       });
     });
   };
-  var query = `SELECT FIELDS_NAME as FIELD,LABEL_NAME as LABEL FROM contact_updater WHERE LABEL_NAME IN (${newFields})`;
+  var query = `SELECT FIELDS_NAME as FIELD,LABEL_NAME as LABEL,TYPE FROM contact_updater WHERE LABEL_NAME IN (${newFields})`;
   await controller
     .mapFields(res, query, fields)
     .then(async (response) => {
       fields = response.data;
-      const reqFields = ["NAME", "LAST_NAME", "EMAIL", "PHONE", "UF_CRM_1337999932852"];
+      const reqFields = [
+        "NAME",
+        "LAST_NAME",
+        "EMAIL",
+        "PHONE",
+        "UF_CRM_1337999932852",
+      ];
       await controller.validate(res, fields, reqFields);
       misFields = Object.assign({}, response.data);
       if (misFields["EMAIL"] !== undefined) delete misFields.EMAIL;
@@ -114,12 +120,13 @@ router.put("/", auth, async function (req, res) {
       return await controller.execute(sql, false);
     })
     .then(async (response) => {
-      return await workflow.getBusinessProcess(id, fields);
+      return await workflow.getBusinessProcess(id, fields, brand);
     })
     .then(async (response) => {
       controller.__return(res, response, "RECORD_UPDATED_SUCCESSFULLY", 200);
     })
     .catch((err) => {
+      console.log(err);
       controller.__return(res, {}, "EXECUTION_ERROR", 500);
     });
 });
@@ -274,7 +281,7 @@ router.post("/", auth, async function (req, res) {
       });
     });
   };
-  var query = `SELECT FIELDS_NAME as FIELD,LABEL_NAME as LABEL FROM contact_updater WHERE LABEL_NAME IN (${newFields})`;
+  var query = `SELECT FIELDS_NAME as FIELD,LABEL_NAME as LABEL,TYPE FROM contact_updater WHERE LABEL_NAME IN (${newFields})`;
   await controller
     .mapFields(res, query, fields)
     .then(async (response) => {
@@ -310,6 +317,7 @@ router.post("/", auth, async function (req, res) {
       );
     })
     .catch((err) => {
+      console.log(err);
       controller.__return(res, {}, "EXECUTION_ERROR", 500);
     });
 });

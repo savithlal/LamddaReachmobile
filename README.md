@@ -12,7 +12,7 @@
         - PASSWORD : Database password
         - DB       : Database db
         - PORT     : Application port
-    - npm start
+    - npm run dev
     - Your app is now running at `http://localhost@PORT`!
 
 **MISC INFO**
