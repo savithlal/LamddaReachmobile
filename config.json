@@ -24,7 +24,7 @@
     "HOST": "reach-nevpro-bitrix-database-2.ceinyc5hvpla.us-east-1.rds.amazonaws.com",
     "USER": "crmstage",
     "PASSWORD": "crm@stage",
-    "DB": "Stage",
+    "DB": "Staging",
     "DB_PORT": "3306",
     "BRANDS": {
       "ReachMobile": "https://crm-stage-lb.reachmobileplatform.com/rest/1/ua1t7bzxzl9a6yh0/",
