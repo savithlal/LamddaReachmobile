@@ -1,5 +1,3 @@
-var connection = require("../db");
-
 const sql = async (
   res,
   tables,
@@ -68,7 +66,7 @@ const sql = async (
   });
 };
 
-const execute = async (sql, flag, data) => {
+const execute = async (connection, sql, flag, data) => {
   return new Promise((resolve, reject) => {
     if (flag) delete sql.b_crm_contact;
     for (i in sql) {
@@ -94,7 +92,7 @@ const __return = async (res, data, message, status) => {
   await res.status(status).json(response);
 };
 
-const getHead = async (res, fields, errorFields) => {
+const getHead = async (connection, res, fields, errorFields) => {
   let query = `SELECT sec1.UF_HEAD FROM b_iblock_section sec JOIN b_uts_iblock_3_section sec1  WHERE sec.ID=sec1.VALUE_ID AND NAME="${fields["UF_CRM_1337999932852"]}"`;
   return new Promise((resolve, reject) => {
     if (errorFields.length) {
@@ -108,7 +106,7 @@ const getHead = async (res, fields, errorFields) => {
   });
 };
 
-const getContact = (res, id, flag) => {
+const getContact = (connection, res, id, flag) => {
   return new Promise((resolve, reject) => {
     let query = `SELECT contact.ID,CONCAT(NAME," ",LAST_NAME) AS FULL_NAME,NAME,LAST_NAME,multi.VALUE as EMAIL FROM b_crm_contact contact INNER JOIN b_crm_field_multi multi ON contact.ID = multi.ELEMENT_ID WHERE contact.ID=${id} AND multi.TYPE_ID="EMAIL" LIMIT 1`;
     connection.query(query, function (err, rows) {
@@ -184,7 +182,7 @@ const buildSql = (response, fields, staticValues) => {
   });
 };
 
-const auditFields = async (query, fields) => {
+const auditFields = async (connection, query, fields) => {
   let auditData = [];
   return new Promise((resolve, reject) => {
     connection.query(query, function (err, rows) {
@@ -200,7 +198,7 @@ const auditFields = async (query, fields) => {
   });
 };
 
-const getLabels = async (fields) => {
+const getLabels = async (connection, fields) => {
   fields = JSON.stringify(Object.keys(fields));
   fields = fields.replace(/^\[(.+)\]$/, "$1");
   let query = `SELECT LIST_FILTER_LABEL,EDIT_FORM_LABEL FROM b_user_field_lang WHERE LIST_FILTER_LABEL IN (${fields});`;
@@ -218,7 +216,7 @@ const getLabels = async (fields) => {
   });
 };
 
-const mapFields = async (res, query, fields) => {
+const mapFields = async (connection, res, query, fields) => {
   return new Promise((resolve, reject) => {
     connection.query(query, async (err, rows) => {
       if (err) reject(err);
@@ -235,12 +233,27 @@ const mapFields = async (res, query, fields) => {
           __return(res, {}, "UNKNOWN_FIELD: " + errFields.toString(), 422);
         } else {
           var data = {};
-          var processedData = await processEnumFields(rows, fields);
-          for (i in rows) {
-            data[rows[i].FIELD.toUpperCase()] =
-              processedData[rows[i].FIELD] ?? fields[rows[i].LABEL];
+          var processedData = await processEnumFields(
+            connection,
+            res,
+            rows,
+            fields
+          );
+          if (!processedData.status === true)
+            __return(
+              res,
+              {},
+              "REQUIRED_FIELDS: " + processedData.data.toString(),
+              422
+            );
+          else {
+            processedData = processedData.data;
+            for (i in rows) {
+              data[rows[i].FIELD.toUpperCase()] =
+                processedData[rows[i].FIELD] ?? fields[rows[i].LABEL];
+            }
+            resolve({ status: true, data: data });
           }
-          resolve({ status: true, data: data });
         }
       }
     });
@@ -264,7 +277,7 @@ const validate = async (res, fields, reqFields) => {
   });
 };
 
-const getBrand = async (res, id) => {
+const getBrand = async (connection, res, id) => {
   return new Promise((resolve, reject) => {
     var query = `SELECT UF_CRM_1337999932852 as BRAND_NAME FROM b_uts_crm_contact WHERE VALUE_ID=${id} LIMIT 1`;
     connection.query(query, (err, rows) => {
@@ -274,27 +287,40 @@ const getBrand = async (res, id) => {
   });
 };
 
-const processEnumFields = async (rows, fields) => {
+const processEnumFields = async (connection, res, rows, fields) => {
+  var enumData = {};
   var enumFields = {};
+  var errorFields = [];
   for (i in rows) {
-    if (rows[i].TYPE == "enumeration")
-      enumFields['"' + rows[i].FIELD + '"'] = '"' + fields[rows[i].LABEL] + '"';
+    if (rows[i].TYPE == "enumeration") {
+      enumData['"' + rows[i].FIELD + '"'] = '"' + fields[rows[i].LABEL] + '"';
+      enumFields[rows[i].FIELD] = fields[rows[i].LABEL];
+      !fields[rows[i].LABEL] ? errorFields.push(rows[i].LABEL) : "";
+    }
   }
-  var processed = [];
-  if (Object.keys(enumFields).length)
-    processed = await mapEnumFields(enumFields);
-  return processed;
+  if (errorFields.length) return { status: false, data: errorFields };
+  else {
+    var processed = [];
+    if (Object.keys(enumData).length)
+      processed = await mapEnumFields(connection, enumData, enumFields);
+    return { status: true, data: processed };
+  }
 };
 
-const mapEnumFields = (enumData) => {
+const mapEnumFields = (connection, enumData, enumFields) => {
   return new Promise((resolve, reject) => {
     var fields = Object.keys(enumData).toString();
     var values = Object.values(enumData).toString();
-    var query = `SELECT f.FIELD_NAME,e.ID from b_user_field_enum e INNER JOIN b_user_field f ON e.user_field_id = f.id WHERE f.field_name IN (${fields}) and value IN (${values})`;
+    var query = `SELECT f.FIELD_NAME,value,e.ID from b_user_field_enum e INNER JOIN b_user_field f ON e.user_field_id = f.id WHERE f.field_name IN (${fields}) and value IN (${values})`;
     connection.query(query, (err, rows) => {
+      if (err) reject(err);
       var processedData = [];
       for (i in rows) {
-        processedData[rows[i].FIELD_NAME] = rows[i].ID;
+        if (
+          enumFields[rows[i].FIELD_NAME].toUpperCase() ===
+          rows[i].value.toUpperCase()
+        )
+          processedData[rows[i].FIELD_NAME] = rows[i].ID;
       }
       resolve(processedData);
     });

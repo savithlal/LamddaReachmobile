@@ -1,16 +1,19 @@
 var express = require("express");
 var router = express.Router();
-var connection = require("../db");
 const controller = require("../controllers/ContactController");
 const workflow = require("../controllers/WorkflowController");
 const auth = require("./Verify");
 
 router.get("/:id", auth, async function (req, res) {
+  const instance = req.instance;
+  var connection = require(`../db/db-${instance}`);
   const id = req.params.id;
-  await controller.getContact(res, id);
+  await controller.getContact(connection, res, id);
 });
 
 router.put("/", auth, async function (req, res) {
+  const instance = req.instance;
+  var connection = require(`../db/db-${instance}`);
   const tables = {
     b_uts_crm_contact: "VALUE_ID",
     b_crm_dynamic_items_179: "CONTACT_ID",
@@ -19,15 +22,14 @@ router.put("/", auth, async function (req, res) {
     audit_contact: "contact_id",
     audit_business_process: "contact_id",
   };
-  const id = req.body.CONTACT_ID;
+  const id = req.body.vid;
   if (id == undefined) {
     controller.__return(res, {}, "CONTACT_ID_IS_REQUIRED", 422);
     return false;
   }
-  var tempFields = req.body;
+  var tempFields = req.body.properties;
   var misFields = {};
-  delete tempFields["CONTACT_ID"];
-  if (!req.body || !Object.keys(req.body).length) {
+  if (!req.body.properties || !Object.keys(req.body.properties).length) {
     controller.__return(res, {}, "REQUIRED_FIELD_MISSING", 422);
     return false;
   }
@@ -38,18 +40,22 @@ router.put("/", auth, async function (req, res) {
   var fields = temp;
   var newFields = JSON.stringify(Object.keys(fields)).toLowerCase();
   newFields = newFields.replace(/^\[(.+)\]$/, "$1");
-  const brand = await controller.getBrand(res, id);
+  const brand = await controller.getBrand(connection, res, id);
   const mapTables = async (tables, fields) => {
     var data = [];
     var auditData = [];
-    let contactData = await controller.getContact(res, id, true);
-    let labels = await controller.getLabels(fields);
+    let contactData = await controller.getContact(connection, res, id, true);
+    let labels = await controller.getLabels(connection, fields);
     for (let table in tables) {
       var query = `DESCRIBE ${table}`;
-      data[table] = await getFields(query, fields);
+      data[table] = await getFields(connection, query, fields);
       if (tables[table] !== "contact_id") {
         query = `SELECT * FROM ${table} WHERE ${tables[table]}=${id} LIMIT 1`;
-        auditData[table] = await controller.auditFields(query, fields);
+        auditData[table] = await controller.auditFields(
+          connection,
+          query,
+          fields
+        );
       }
     }
     return {
@@ -60,7 +66,7 @@ router.put("/", auth, async function (req, res) {
     };
   };
 
-  const getFields = (query, fields) => {
+  const getFields = (connection, query, fields) => {
     return new Promise((resolve, reject) => {
       connection.query(query, function (err, rows) {
         if (err) return reject(err);
@@ -83,7 +89,7 @@ router.put("/", auth, async function (req, res) {
   };
   var query = `SELECT FIELDS_NAME as FIELD,LABEL_NAME as LABEL,TYPE FROM contact_updater WHERE LABEL_NAME IN (${newFields})`;
   await controller
-    .mapFields(res, query, fields)
+    .mapFields(connection, res, query, fields)
     .then(async (response) => {
       fields = response.data;
       const reqFields = [
@@ -117,11 +123,17 @@ router.put("/", auth, async function (req, res) {
       );
     })
     .then(async (sql) => {
-      return await controller.execute(sql, false);
+      return await controller.execute(connection, sql, false);
     })
-    .then(async (response) => {
-      return await workflow.getBusinessProcess(id, fields, brand);
-    })
+    // .then(async (response) => {
+    //   return await workflow.getBusinessProcess(
+    //     connection,
+    //     id,
+    //     fields,
+    //     brand,
+    //     instance
+    //   );
+    // })
     .then(async (response) => {
       controller.__return(res, response, "RECORD_UPDATED_SUCCESSFULLY", 200);
     })
@@ -132,6 +144,8 @@ router.put("/", auth, async function (req, res) {
 });
 
 router.post("/", auth, async function (req, res) {
+  const instance = req.instance;
+  var connection = require(`../db/db-${instance}`);
   const date = new Date().toISOString().slice(0, 19).replace("T", " ");
   const tables = {
     b_crm_contact: [
@@ -226,7 +240,7 @@ router.post("/", auth, async function (req, res) {
     "PHONE",
     "UF_CRM_1337999932852",
   ];
-  var tempFields = req.body;
+  var tempFields = req.body.properties;
   var temp = {};
   Object.keys(tempFields).forEach(async (field) => {
     await (temp[field.toLowerCase()] = tempFields[field]);
@@ -241,14 +255,14 @@ router.post("/", auth, async function (req, res) {
     return new Promise(async (resolve, reject) => {
       for (let table in tables) {
         var query = `DESCRIBE ${table}`;
-        data[table].push(await getFields(query, fields));
+        data[table].push(await getFields(connection, query, fields));
         data[table] = data[table].flat();
       }
       resolve({ data, head });
     });
   };
 
-  const getFields = (query, fields) => {
+  const getFields = (connection, query, fields) => {
     return new Promise((resolve, reject) => {
       connection.query(query, function (err, rows) {
         if (err) return reject(err);
@@ -270,7 +284,7 @@ router.post("/", auth, async function (req, res) {
     });
   };
 
-  const contactSql = (query) => {
+  const contactSql = (connection, query) => {
     return new Promise((resolve, reject) => {
       connection.query(query, function (err, rows) {
         if (err) reject(err);
@@ -283,13 +297,13 @@ router.post("/", auth, async function (req, res) {
   };
   var query = `SELECT FIELDS_NAME as FIELD,LABEL_NAME as LABEL,TYPE FROM contact_updater WHERE LABEL_NAME IN (${newFields})`;
   await controller
-    .mapFields(res, query, fields)
+    .mapFields(connection, res, query, fields)
     .then(async (response) => {
       fields = response.data;
       return await controller.checkFields(res, fields, reqFields, response);
     })
     .then(async (errorFields) => {
-      return await controller.getHead(res, fields, errorFields);
+      return await controller.getHead(connection, res, fields, errorFields);
     })
     .then(async (head) => {
       staticValues.b_crm_contact.ASSIGNED_BY_ID = head;
@@ -299,11 +313,11 @@ router.post("/", auth, async function (req, res) {
       return await controller.buildSql(response, fields, staticValues);
     })
     .then(async (response) => {
-      await contactSql(response.b_crm_contact, fields);
+      await contactSql(connection, response.b_crm_contact);
       return response;
     })
     .then(async (response) => {
-      return await controller.execute(response, true, {
+      return await controller.execute(connection, response, true, {
         search: "--CONTACT_ID--",
         replace: contactId,
       });

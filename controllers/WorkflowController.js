@@ -1,24 +1,25 @@
-var connection = require("../db");
 const unserialize = require("phpunserialize");
 const controller = require("../controllers/ContactController");
 const axios = require("axios").default;
 var config = require("../config.json");
 
-const getBusinessProcess = async (id, fields, brand) => {
+const getBusinessProcess = async (connection, id, fields, brand, instance) => {
   let fieldCopy = fields;
   fields = JSON.stringify(Object.keys(fields));
   fields = fields.replace(/^\[(.+)\]$/, "$1");
   var query = `SELECT BP_ID,Operator,Field FROM terminate_business_process WHERE Field IN (${fields});`;
   return new Promise(async (resolve, reject) => {
-    await getData(id, query, fieldCopy, fields).then(async (data) => {
-      await startWorkflow(data, brand);
-      await terminateWorkflow(data, brand);
-      resolve();
-    });
+    await getData(connection, id, query, fieldCopy, fields).then(
+      async (data) => {
+        await startWorkflow(data, brand, instance);
+        await terminateWorkflow(data, brand, instance);
+        resolve();
+      }
+    );
   });
 };
 
-const getWorkflowData = async (query) => {
+const getWorkflowData = async (connection, query) => {
   return new Promise((resolve, reject) => {
     connection.query(query, async function (err, rows) {
       if (err) reject(err);
@@ -27,7 +28,7 @@ const getWorkflowData = async (query) => {
   });
 };
 
-const getWorkflow = async (id, processId) => {
+const getWorkflow = async (connection, id, processId) => {
   var query = `SELECT ID,DOCUMENT_ID,ENTITY,MODULE_ID FROM b_bp_workflow_state WHERE STATE = 'InProgress' AND WORKFLOW_TEMPLATE_ID = ${processId} AND DOCUMENT_ID = "CONTACT_${id}"`;
   return new Promise((resolve, reject) => {
     connection.query(query, function (err, rows) {
@@ -65,18 +66,18 @@ const mapWorkflow = async (id, workflowData, fieldCopy) => {
   });
 };
 
-const getData = async (id, query, fieldCopy, fields) => {
+const getData = async (connection, id, query, fieldCopy, fields) => {
   return new Promise(async (resolve, reject) => {
     var data = [];
-    data = await getWorkflowData(query, fields);
+    data = await getWorkflowData(connection, query, fields);
     var terminateData = [],
       startData = [];
     if (data.length) terminateData = await mapWorkflow(id, data, fieldCopy);
     fields = fields.replace(new RegExp(",", "g"), "|");
     query = `SELECT bp_id,NAME FROM config cf INNER JOIN b_bp_workflow_template wf ON cf.bp_id = wf.ID WHERE cf.field REGEXP ${fields}`;
-    startData = await getStartWorkflow(query);
-    var response = await auditWorkflow(id, startData);
-    await controller.execute([response]);
+    startData = await getStartWorkflow(connection, query);
+    var response = await auditWorkflow(connection, id, startData);
+    await controller.execute(connection, [response]);
     resolve({
       response: {
         contactId: id,
@@ -87,7 +88,7 @@ const getData = async (id, query, fieldCopy, fields) => {
   });
 };
 
-const getStartWorkflow = async (query) => {
+const getStartWorkflow = async (connection, query) => {
   return new Promise((resolve, reject) => {
     connection.query(query, function (err, rows) {
       if (err) reject(err);
@@ -102,7 +103,7 @@ const getStartWorkflow = async (query) => {
   });
 };
 
-const auditWorkflow = async (id, data) => {
+const auditWorkflow = async (connection, id, data) => {
   return new Promise((resolve, reject) => {
     var query =
       "INSERT INTO audit_business_process (contact_id, bp_id, workflow_name) VALUES ";
@@ -116,12 +117,13 @@ const auditWorkflow = async (id, data) => {
   });
 };
 
-const startWorkflow = (data, brand) => {
+const startWorkflow = (data, brand, instance) => {
   return new Promise((resolve, reject) => {
     var startData = data.response.startData;
     var id = data.response.contactId;
     var api =
-      config.BRANDS[brand] ?? config.BRANDS.default + config.ENDPOINTS.START;
+      (config[instance].BRANDS[brand] ?? config[instance].BRANDS.default) +
+      config[instance].ENDPOINTS.START;
     Object.keys(startData).map((processId) => {
       var params = {
         TEMPLATE_ID: processId,
@@ -134,12 +136,12 @@ const startWorkflow = (data, brand) => {
   });
 };
 
-const terminateWorkflow = (data, brand) => {
+const terminateWorkflow = (data, brand, instance) => {
   return new Promise((resolve, reject) => {
     var terminateData = data.response.terminateData;
     var api =
-      config.BRANDS[brand] ??
-      config.BRANDS.default + config.ENDPOINTS.TERMINATE;
+      (config[instance].BRANDS[brand] ?? config[instance].BRANDS.default) +
+      config[instance].ENDPOINTS.TERMINATE;
     Object.keys(terminateData).map((key) => {
       var params = {
         ID: terminateData[0][key].ID,

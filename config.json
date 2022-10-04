@@ -1,17 +1,56 @@
 {
-  "HOST": "reach-nevpro-bitrix-database-1.ceinyc5hvpla.us-east-1.rds.amazonaws.com",
-  "USER": "crmflow",
-  "PASSWORD": "crm@flow",
-  "DB": "Dev",
-  "DB_PORT": "3306",
-  "APP_PORT": 8080,
-  "BRANDS": {
-    "reach": "https://crm-dev-lb.reachmobileplatform.com/rest/1/ua1t7bzxzl9a6yh0/",
-    "default": "https://crm-dev-lb.reachmobileplatform.com/rest/1/ua1t7bzxzl9a6yh0/"
+  "instances": {
+    "dev": "dev",
+    "stage": "stage",
+    "prod": "prod"
   },
-  "ENDPOINTS": {
-    "START": "bizproc.workflow.start",
-    "TERMINATE": "bizproc.workflow.terminate"
+  "dev": {
+    "HOST": "reach-nevpro-bitrix-database-1.ceinyc5hvpla.us-east-1.rds.amazonaws.com",
+    "USER": "crmflow",
+    "PASSWORD": "crm@flow",
+    "DB": "Dev",
+    "DB_PORT": "3306",
+    "BRANDS": {
+      "ReachMobile": "https://crm-dev-lb.reachmobileplatform.com/rest/1/ua1t7bzxzl9a6yh0/",
+      "default": "https://crm-dev-lb.reachmobileplatform.com/rest/1/ua1t7bzxzl9a6yh0/"
+    },
+    "ENDPOINTS": {
+      "START": "bizproc.workflow.start",
+      "TERMINATE": "bizproc.workflow.terminate"
+    },
+    "TOKEN_SECRET": "4xskwKdXftBDblD3"
   },
-  "TOKEN_SECRET": "4xskwKdXftBDblD3"
+  "stage": {
+    "HOST": "reach-nevpro-bitrix-database-2.ceinyc5hvpla.us-east-1.rds.amazonaws.com",
+    "USER": "crmstage",
+    "PASSWORD": "crm@stage",
+    "DB": "Stage",
+    "DB_PORT": "3306",
+    "BRANDS": {
+      "ReachMobile": "https://crm-stage-lb.reachmobileplatform.com/rest/1/ua1t7bzxzl9a6yh0/",
+      "default": "https://crm-stage-lb.reachmobileplatform.com/rest/1/ua1t7bzxzl9a6yh0/"
+    },
+    "ENDPOINTS": {
+      "START": "bizproc.workflow.start",
+      "TERMINATE": "bizproc.workflow.terminate"
+    },
+    "TOKEN_SECRET": "EHLicacc8EF2egwp"
+  },
+  "prod": {
+    "HOST": "",
+    "USER": "",
+    "PASSWORD": "",
+    "DB": "",
+    "DB_PORT": "3306",
+    "BRANDS": {
+      "ReachMobile": "",
+      "default": ""
+    },
+    "ENDPOINTS": {
+      "START": "bizproc.workflow.start",
+      "TERMINATE": "bizproc.workflow.terminate"
+    },
+    "TOKEN_SECRET": "mW2C3eFUgeBK25a6"
+  },
+  "APP_PORT": 8080
 }

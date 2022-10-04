@@ -6,13 +6,18 @@ var controller = require("../controllers/ContactController");
 
 router.post("/login", (req, res, next) => {
   const params = req.body;
+  const instance = req.instance;
   if (
-    params.username === "johndoe@reach.com" &&
-    params.password === "u0eIZu3cqXhM0B5N"
+    params.username === "johndoe@123.com" &&
+    params.password === "randomstring"
   ) {
-    const token = jwt.sign({ user: params.username }, config.TOKEN_SECRET, {
-      expiresIn: 60 * 60,
-    });
+    const token = jwt.sign(
+      { user: params.username },
+      config[instance].TOKEN_SECRET,
+      {
+        expiresIn: 60 * 60,
+      }
+    );
     res
       .header("Authorization", token)
       .status(200)
