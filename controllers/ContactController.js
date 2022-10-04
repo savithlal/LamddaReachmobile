@@ -233,12 +233,7 @@ const mapFields = async (connection, res, query, fields) => {
           __return(res, {}, "UNKNOWN_FIELD: " + errFields.toString(), 422);
         } else {
           var data = {};
-          var processedData = await processEnumFields(
-            connection,
-            res,
-            rows,
-            fields
-          );
+          var processedData = await processEnumFields(connection, rows, fields);
           if (!processedData.status === true)
             __return(
               res,
@@ -287,7 +282,7 @@ const getBrand = async (connection, res, id) => {
   });
 };
 
-const processEnumFields = async (connection, res, rows, fields) => {
+const processEnumFields = async (connection, rows, fields) => {
   var enumData = {};
   var enumFields = {};
   var errorFields = [];
