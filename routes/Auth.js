@@ -8,8 +8,8 @@ router.post("/login", (req, res, next) => {
   const params = req.body;
   const instance = req.instance;
   if (
-    params.username === "johndoe@123.com" &&
-    params.password === "randomstring"
+    params.username === "developer@reach.com" &&
+    params.password === "u0eIZu3cqXhM0B5N"
   ) {
     const token = jwt.sign(
       { user: params.username },
