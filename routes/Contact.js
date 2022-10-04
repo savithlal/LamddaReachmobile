@@ -125,15 +125,15 @@ router.put("/", auth, async function (req, res) {
     .then(async (sql) => {
       return await controller.execute(connection, sql, false);
     })
-    // .then(async (response) => {
-    //   return await workflow.getBusinessProcess(
-    //     connection,
-    //     id,
-    //     fields,
-    //     brand,
-    //     instance
-    //   );
-    // })
+    .then(async (response) => {
+      return await workflow.getBusinessProcess(
+        connection,
+        id,
+        fields,
+        brand,
+        instance
+      );
+    })
     .then(async (response) => {
       controller.__return(res, response, "RECORD_UPDATED_SUCCESSFULLY", 200);
     })
