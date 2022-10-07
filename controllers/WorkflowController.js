@@ -38,7 +38,7 @@ const getWorkflow = async (connection, id, processId) => {
   });
 };
 
-const mapWorkflow = async (id, workflowData, fieldCopy) => {
+const mapWorkflow = async (connection, id, workflowData, fieldCopy) => {
   var terminateData = [];
   return new Promise(async (resolve, reject) => {
     var data = workflowData;
@@ -53,7 +53,7 @@ const mapWorkflow = async (id, workflowData, fieldCopy) => {
           let str = `"${fieldCopy[data[key].Field]}" ${operator}= "${field}"`;
           try {
             if (eval(str) === true) {
-              var data = await getWorkflow(id, processId);
+              var data = await getWorkflow(connection, id, processId);
               if (data.length) terminateData.push(data);
             }
           } catch (err) {
@@ -72,7 +72,8 @@ const getData = async (connection, id, query, fieldCopy, fields) => {
     data = await getWorkflowData(connection, query, fields);
     var terminateData = [],
       startData = [];
-    if (data.length) terminateData = await mapWorkflow(id, data, fieldCopy);
+    if (data.length)
+      terminateData = await mapWorkflow(connection, id, data, fieldCopy);
     fields = fields.replace(new RegExp(",", "g"), "|");
     query = `SELECT bp_id,NAME FROM config cf INNER JOIN b_bp_workflow_template wf ON cf.bp_id = wf.ID WHERE cf.field REGEXP ${fields}`;
     startData = await getStartWorkflow(connection, query);
