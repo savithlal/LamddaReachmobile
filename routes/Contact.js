@@ -40,11 +40,11 @@ router.put("/", auth, async function (req, res) {
   var fields = temp;
   var newFields = JSON.stringify(Object.keys(fields)).toLowerCase();
   newFields = newFields.replace(/^\[(.+)\]$/, "$1");
+  const contactData = await controller.getContact(connection, res, id, true);
   const brand = await controller.getBrand(connection, res, id);
   const mapTables = async (tables, fields) => {
     var data = [];
     var auditData = [];
-    let contactData = await controller.getContact(connection, res, id, true);
     let labels = await controller.getLabels(connection, fields);
     for (let table in tables) {
       var query = `DESCRIBE ${table}`;
