@@ -15,7 +15,7 @@ router.post("/login", (req, res, next) => {
       { user: params.username },
       config[instance].TOKEN_SECRET,
       {
-        expiresIn: 60 * 60,
+        expiresIn: 60 * 60 * 9,
       }
     );
     res
