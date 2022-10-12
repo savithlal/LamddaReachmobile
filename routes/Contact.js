@@ -240,6 +240,10 @@ router.post("/", auth, async function (req, res) {
     "PHONE",
     "UF_CRM_1337999932852",
   ];
+  if (!req.body.properties || !Object.keys(req.body.properties).length) {
+    controller.__return(res, {}, "REQUIRED_FIELD_MISSING", 422);
+    return false;
+  }
   var tempFields = req.body.properties;
   var temp = {};
   Object.keys(tempFields).forEach(async (field) => {
