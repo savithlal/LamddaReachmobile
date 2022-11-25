@@ -22,11 +22,12 @@ router.put("/", auth, async function (req, res) {
     audit_contact: "contact_id",
     audit_business_process: "contact_id",
   };
-  const id = req.body.vid;
-  if (id == undefined) {
+  if (req.body.bitrixId == undefined && req.query.bitrixId == undefined) {
     controller.__return(res, {}, "CONTACT_ID_IS_REQUIRED", 422);
     return false;
   }
+  const id =
+    req.body.bitrixId !== undefined ? req.body.bitrixId : req.query.bitrixId;
   var tempFields = req.body.properties;
   var misFields = {};
   if (!req.body.properties || !Object.keys(req.body.properties).length) {
@@ -275,7 +276,7 @@ router.post("/", auth, async function (req, res) {
           for (var i = 0; i < rows.length; i++) {
             let field = rows[i].Field;
             for (key in fields) {
-              if (key == field) {
+              if (key == field || field == "DATE_CREATE") {
                 temp.push(field);
                 delete misFields[field];
                 break;
