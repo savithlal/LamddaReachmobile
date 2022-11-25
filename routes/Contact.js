@@ -189,6 +189,13 @@ router.post("/", auth, async function (req, res) {
       "VALUE",
     ],
     b_crm_dp_comm_mcd: ["ENTITY_TYPE_ID", "ENTITY_ID", "TYPE", "VALUE"],
+    b_crm_entity_contact: [
+      "ENTITY_TYPE_ID",
+      "ENTITY_ID",
+      "CONTACT_ID",
+      "SORT",
+      "ROLE_ID",
+    ],
   };
   const staticValues = {
     b_crm_contact: {
@@ -231,8 +238,16 @@ router.post("/", auth, async function (req, res) {
       TYPE: "PHONE",
     },
     b_uts_crm_contact: {},
+    b_crm_entity_contact: {
+      ENTITY_TYPE_ID: 179,
+      SORT: 10,
+      ROLE_ID: 0,
+      ENTITY_ID: "--SPA_ID--",
+      CONTACT_ID: "--CONTACT_ID--",
+    },
   };
   var contactId;
+  var spaId;
   var data = tables;
   const reqFields = [
     "NAME",
@@ -300,6 +315,20 @@ router.post("/", auth, async function (req, res) {
       });
     });
   };
+
+  const spaSql = (connection, query, data) => {
+    return new Promise((resolve, reject) => {
+      var r = new RegExp(data.search, "g");
+      query = query.replace(r, data.replace);
+      connection.query(query, function (err, rows) {
+        if (err) reject(err);
+        else {
+          spaId = rows.insertId;
+          resolve(spaId);
+        }
+      });
+    });
+  };
   var query = `SELECT FIELDS_NAME as FIELD,LABEL_NAME as LABEL,TYPE FROM contact_updater WHERE LABEL_NAME IN (${newFields})`;
   await controller
     .mapFields(connection, res, query, fields)
@@ -319,12 +348,22 @@ router.post("/", auth, async function (req, res) {
     })
     .then(async (response) => {
       await contactSql(connection, response.b_crm_contact);
+      await spaSql(connection, response.b_crm_dynamic_items_179, {
+        search: "--CONTACT_ID--",
+        replace: contactId,
+      });
       return response;
     })
     .then(async (response) => {
       return await controller.execute(connection, response, true, {
-        search: "--CONTACT_ID--",
-        replace: contactId,
+        search: {
+          contactId: "--CONTACT_ID--",
+          spaId: "--SPA_ID--",
+        },
+        replace: {
+          contactId: contactId,
+          spaId: spaId,
+        },
       });
     })
     .then(async (response) => {

@@ -68,12 +68,17 @@ const sql = async (
 
 const execute = async (connection, sql, flag, data) => {
   return new Promise((resolve, reject) => {
-    if (flag) delete sql.b_crm_contact;
+    if (flag) {
+      delete sql.b_crm_contact;
+      delete sql.b_crm_dynamic_items_179;
+    }
     for (i in sql) {
       let query = sql[i];
       if (flag) {
-        var r = new RegExp(data.search, "g");
-        query = query.replace(r, data.replace);
+        var r = new RegExp(data.search.contactId, "g");
+        query = query.replace(r, data.replace.contactId);
+        var r = new RegExp(data.search.spaId, "g");
+        query = query.replace(r, data.replace.spaId);
       }
       connection.query(query, function (err, rows) {
         if (err) reject(err);
