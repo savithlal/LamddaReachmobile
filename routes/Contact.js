@@ -23,7 +23,7 @@ router.put("/", auth, async function (req, res) {
     audit_business_process: "contact_id",
   };
   if (req.body.bitrixId == undefined && req.query.bitrixId == undefined) {
-    controller.__return(res, {}, "CONTACT_ID_IS_REQUIRED", 422);
+    controller.__return(res, [], "CONTACT_ID_IS_REQUIRED", 422);
     return false;
   }
   const id =
@@ -31,13 +31,20 @@ router.put("/", auth, async function (req, res) {
   var tempFields = req.body.properties;
   var misFields = {};
   if (!req.body.properties || !Object.keys(req.body.properties).length) {
-    controller.__return(res, {}, "REQUIRED_FIELD_MISSING", 422);
+    controller.__return(res, [], "REQUIRED_FIELD_MISSING", 422);
     return false;
   }
   var temp = {};
   Object.keys(tempFields).forEach(async (field) => {
     await (temp[field.toLowerCase()] = tempFields[field]);
   });
+  if (tempFields.email) {
+    var emailFormatFlag = await controller.checkEmailFormat(tempFields.email);
+    if (!emailFormatFlag.status) {
+      controller.__return(res, [], "INVALID_EMAIL_FORMAT", 422);
+      return false;
+    }
+  }
   var fields = temp;
   var newFields = JSON.stringify(Object.keys(fields)).toLowerCase();
   newFields = newFields.replace(/^\[(.+)\]$/, "$1");
@@ -136,11 +143,11 @@ router.put("/", auth, async function (req, res) {
       );
     })
     .then(async (response) => {
-      controller.__return(res, response, "RECORD_UPDATED_SUCCESSFULLY", 200);
+      controller.__return(res, response, "Contact updated successfully", 200);
     })
     .catch((err) => {
       console.log(err);
-      controller.__return(res, {}, "EXECUTION_ERROR", 500);
+      controller.__return(res, [], "EXECUTION_ERROR", 500);
     });
 });
 
@@ -257,7 +264,7 @@ router.post("/", auth, async function (req, res) {
     "UF_CRM_1337999932852",
   ];
   if (!req.body.properties || !Object.keys(req.body.properties).length) {
-    controller.__return(res, {}, "REQUIRED_FIELD_MISSING", 422);
+    controller.__return(res, [], "REQUIRED_FIELD_MISSING", 422);
     return false;
   }
   var tempFields = req.body.properties;
@@ -265,6 +272,29 @@ router.post("/", auth, async function (req, res) {
   Object.keys(tempFields).forEach(async (field) => {
     await (temp[field.toLowerCase()] = tempFields[field]);
   });
+  if (tempFields.email) {
+    const searchContact = async (email) => {
+      var query = `SELECT ELEMENT_ID FROM b_crm_field_multi WHERE ENTITY_ID = 'CONTACT' AND VALUE = '${email}'  LIMIT 1`;
+      return new Promise((resolve, reject) => {
+        connection.query(query, function (err, rows) {
+          if (err) return reject(err);
+          else {
+            resolve(rows.length ? rows[0]["ELEMENT_ID"] : 0);
+          }
+        });
+      });
+    };
+    var emailFlag = await searchContact(tempFields.email);
+    if (emailFlag) {
+      controller.__return(res, [], "Contact already exists", 422);
+      return false;
+    }
+    var emailFormatFlag = await controller.checkEmailFormat(tempFields.email);
+    if (!emailFormatFlag.status) {
+      controller.__return(res, [], "INVALID_EMAIL_FORMAT", 422);
+      return false;
+    }
+  }
   var fields = temp;
   const misFields = Object.assign({}, fields);
   delete misFields["email"];
@@ -370,13 +400,13 @@ router.post("/", auth, async function (req, res) {
       controller.__return(
         res,
         { CONTACT_ID: contactId },
-        "RECORD_CREATED_SUCCESSFULLY",
+        "Contact created successfully",
         201
       );
     })
     .catch((err) => {
       console.log(err);
-      controller.__return(res, {}, "EXECUTION_ERROR", 500);
+      controller.__return(res, [], "EXECUTION_ERROR", 500);
     });
 });
 

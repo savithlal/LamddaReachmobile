@@ -20,7 +20,11 @@ const sql = async (
       if (data[table].length) {
         var sql = `UPDATE ${table} SET `;
         for (let field in data[table]) {
-          sql += `${data[table][field]}="${fields[data[table][field]]}",`;
+          fields[data[table][field]] =
+            fields[data[table][field]] == null
+              ? null
+              : '"' + fields[data[table][field]] + '"';
+          sql += `${data[table][field]}=${fields[data[table][field]]},`;
         }
         sql = sql.replace(/,+$/, "");
         sql += ` WHERE ${tables[table]}=${id}`;
@@ -31,7 +35,7 @@ const sql = async (
         Object.keys(auditData[table]).length
       ) {
         var sql = `INSERT INTO ${
-          table == "b_crm_dynamic_items_179" ? "audit_spa" : "audit_contact"
+          table == "b_crm_dynamic_items_179" ? "audit_SPA" : "audit_contact"
         } (contact_id, field, before_value, after_value, contact_email, contact_name, field_name${
           table == "b_crm_dynamic_items_179" ? "" : ", type"
         }) VALUES `;
@@ -43,6 +47,7 @@ const sql = async (
           }"${table == "b_crm_dynamic_items_179" ? "" : ',"api"'}),`;
         }
         sql = sql.replace(/,+$/, "");
+        sql = sql.replace(/""/g, '"');
         sqlData.push(sql);
       }
     }
@@ -90,7 +95,7 @@ const execute = async (connection, sql, flag, data) => {
 
 const __return = async (res, data, message, status) => {
   let response = {
-    status: String(status)[0] == 2 ? "SUCCESS" : "ERROR",
+    status: String(status)[0] == 2 ? true : false,
     message: message,
     data: data ?? {},
   };
@@ -119,11 +124,11 @@ const getContact = (connection, res, id, flag) => {
       else {
         flag
           ? !rows.length
-            ? __return(res, {}, "RECORD_NOT_FOUND", 200)
+            ? __return(res, {}, "Contact not found", 200)
             : resolve(rows[0])
           : !rows.length
-          ? __return(res, {}, "RECORD_NOT_FOUND", 200)
-          : __return(res, rows[0], "RECORD_LISTED_SUCCESSFULLY", 200);
+          ? __return(res, {}, "Contact not found", 200)
+          : __return(res, rows[0], "Contact listed successfully", 200);
       }
     });
   });
@@ -293,15 +298,22 @@ const processEnumFields = async (connection, rows, fields) => {
   var errorFields = [];
   for (i in rows) {
     if (rows[i].TYPE == "enumeration") {
-      enumData['"' + rows[i].FIELD + '"'] = '"' + fields[rows[i].LABEL] + '"';
+      !fields[rows[i].LABEL] ? (fields[rows[i].LABEL] = null) : "";
+      enumData['"' + rows[i].FIELD + '"'] =
+        fields[rows[i].LABEL] == null
+          ? null
+          : '"' + fields[rows[i].LABEL] + '"';
       enumFields[rows[i].FIELD] = fields[rows[i].LABEL];
-      !fields[rows[i].LABEL] ? errorFields.push(rows[i].LABEL) : "";
     }
   }
   if (errorFields.length) return { status: false, data: errorFields };
   else {
+    var enumDataArr;
+    enumDataArr = Object.values(enumData).filter(function (el) {
+      return el != null;
+    });
     var processed = [];
-    if (Object.keys(enumData).length)
+    if (Object.keys(enumDataArr).length)
       processed = await mapEnumFields(connection, enumData, enumFields);
     return { status: true, data: processed };
   }
@@ -327,6 +339,14 @@ const mapEnumFields = (connection, enumData, enumFields) => {
   });
 };
 
+const checkEmailFormat = async (email) => {
+  return new Promise((resolve, reject) => {
+    var re =
+      /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+    re.test(email) ? resolve({ status: 1 }) : resolve({ status: 0 });
+  });
+};
+
 module.exports = {
   sql,
   execute,
@@ -340,4 +360,5 @@ module.exports = {
   mapFields,
   validate,
   getBrand,
+  checkEmailFormat,
 };
