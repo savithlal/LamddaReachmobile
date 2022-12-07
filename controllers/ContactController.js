@@ -248,7 +248,8 @@ const mapFields = async (connection, res, query, fields) => {
             __return(
               res,
               {},
-              "REQUIRED_FIELDS: " + processedData.data.toString(),
+              "PLEASE_PASS_CORRECT_PARAMETER: " +
+                Object.keys(processedData.data).toString(),
               422
             );
           else {
@@ -315,26 +316,67 @@ const processEnumFields = async (connection, rows, fields) => {
     var processed = [];
     if (Object.keys(enumDataArr).length)
       processed = await mapEnumFields(connection, enumData, enumFields);
-    return { status: true, data: processed };
+    var status = processed.processedData.length
+      ? processed.errorProcessedData.length
+        ? false
+        : true
+      : false;
+    var data = processed.processedData.length
+      ? processed.processedData
+      : processed.errorProcessedData;
+    return { status: status, data: data };
   }
 };
 
 const mapEnumFields = (connection, enumData, enumFields) => {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
+    var booleanFields = [];
+    Object.keys(enumFields).map((field) => {
+      if (typeof enumFields[field] == "boolean")
+        booleanFields[field] = enumFields[field];
+    });
+    if (Object.keys(booleanFields).length) {
+      var temp = await processBooleanFields(
+        connection,
+        booleanFields,
+        enumData,
+        enumFields
+      );
+      enumData = temp.enumData;
+      enumFields = temp.enumFields;
+    }
     var fields = Object.keys(enumData).toString();
     var values = Object.values(enumData).toString();
     var query = `SELECT f.FIELD_NAME,value,e.ID from b_user_field_enum e INNER JOIN b_user_field f ON e.user_field_id = f.id WHERE f.field_name IN (${fields}) and value IN (${values})`;
     connection.query(query, (err, rows) => {
       if (err) reject(err);
       var processedData = [];
-      for (i in rows) {
-        if (
-          enumFields[rows[i].FIELD_NAME].toUpperCase() ===
-          rows[i].value.toUpperCase()
-        )
-          processedData[rows[i].FIELD_NAME] = rows[i].ID;
+      var errorProcessedData = [];
+      if (rows.length !== Object.keys(enumData).length) {
+        for (i in rows) {
+          var temp = Object.keys(enumFields);
+          if (temp.includes(rows[i].FIELD_NAME))
+            errorProcessedData[rows[i].FIELD_NAME] = 1;
+        }
+        resolve({
+          processedData: processedData,
+          errorProcessedData: errorProcessedData,
+        });
       }
-      resolve(processedData);
+      for (i in rows) {
+        if (typeof enumFields[rows[i].FIELD_NAME] != "boolean") {
+          if (
+            enumFields[rows[i].FIELD_NAME].toUpperCase() ===
+            rows[i].value.toUpperCase()
+          )
+            processedData[rows[i].FIELD_NAME] = rows[i].ID;
+          else errorProcessedData[rows[i].FIELD_NAME] = 1;
+        } else errorProcessedData[rows[i].FIELD_NAME] = 1;
+      }
+      resolve({
+        processedData: processedData,
+        errorProcessedData: errorProcessedData,
+      });
     });
   });
 };
@@ -344,6 +386,35 @@ const checkEmailFormat = async (email) => {
     var re =
       /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
     re.test(email) ? resolve({ status: 1 }) : resolve({ status: 0 });
+  });
+};
+
+const processBooleanFields = async (
+  connection,
+  booleanFields,
+  enumData,
+  enumFields
+) => {
+  return new Promise((resolve, reject) => {
+    Object.keys(booleanFields).map(async (field) => {
+      var value = booleanFields[field];
+      var query = `SELECT e.VALUE FROM b_user_field_enum e INNER JOIN b_user_field f ON e.user_field_id = f.id WHERE f.field_name = "${field}" AND label_value ="${value}" LIMIT 1`;
+      var value = await getEnumValue(connection, query);
+      if (value) {
+        enumData['"' + field + '"'] = '"' + value + '"';
+        enumFields[field] = '"' + value + '"';
+      }
+      resolve({ enumData: enumData, enumFields: enumFields });
+    });
+  });
+};
+
+const getEnumValue = async (connection, query) => {
+  return new Promise((resolve, reject) => {
+    connection.query(query, (err, rows) => {
+      if (err) reject(err);
+      if (rows.length) resolve(rows[0].VALUE);
+    });
   });
 };
 
