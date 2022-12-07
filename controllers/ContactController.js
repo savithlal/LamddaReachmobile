@@ -316,14 +316,12 @@ const processEnumFields = async (connection, rows, fields) => {
     var processed = [];
     if (Object.keys(enumDataArr).length)
       processed = await mapEnumFields(connection, enumData, enumFields);
-    var status = processed.processedData.length
-      ? processed.errorProcessedData.length
-        ? false
-        : true
-      : false;
-    var data = processed.processedData.length
-      ? processed.processedData
-      : processed.errorProcessedData;
+    var status = Object.keys(processed.errorProcessedData).length
+      ? false
+      : true;
+    var data = Object.keys(processed.errorProcessedData).length
+      ? processed.errorProcessedData
+      : processed.processedData;
     return { status: status, data: data };
   }
 };
@@ -335,28 +333,19 @@ const mapEnumFields = (connection, enumData, enumFields) => {
       if (typeof enumFields[field] == "boolean")
         booleanFields[field] = enumFields[field];
     });
-    if (Object.keys(booleanFields).length) {
-      var temp = await processBooleanFields(
-        connection,
-        booleanFields,
-        enumData,
-        enumFields
-      );
-      enumData = temp.enumData;
-      enumFields = temp.enumFields;
-    }
     var fields = Object.keys(enumData).toString();
     var values = Object.values(enumData).toString();
-    var query = `SELECT f.FIELD_NAME,value,e.ID from b_user_field_enum e INNER JOIN b_user_field f ON e.user_field_id = f.id WHERE f.field_name IN (${fields}) and value IN (${values})`;
+    var query = `SELECT f.FIELD_NAME,value,e.ID from b_user_field_enum e INNER JOIN b_user_field f ON e.user_field_id = f.id WHERE f.field_name IN (${fields}) and label_value IN (${values})`;
     connection.query(query, (err, rows) => {
       if (err) reject(err);
       var processedData = [];
       var errorProcessedData = [];
       if (rows.length !== Object.keys(enumData).length) {
+        errorProcessedData = enumFields;
         for (i in rows) {
           var temp = Object.keys(enumFields);
           if (temp.includes(rows[i].FIELD_NAME))
-            errorProcessedData[rows[i].FIELD_NAME] = 1;
+            delete errorProcessedData[rows[i].FIELD_NAME];
         }
         resolve({
           processedData: processedData,
@@ -364,14 +353,14 @@ const mapEnumFields = (connection, enumData, enumFields) => {
         });
       }
       for (i in rows) {
-        if (typeof enumFields[rows[i].FIELD_NAME] != "boolean") {
-          if (
-            enumFields[rows[i].FIELD_NAME].toUpperCase() ===
-            rows[i].value.toUpperCase()
-          )
-            processedData[rows[i].FIELD_NAME] = rows[i].ID;
-          else errorProcessedData[rows[i].FIELD_NAME] = 1;
-        } else errorProcessedData[rows[i].FIELD_NAME] = 1;
+        var fieldVal = enumFields[rows[i].FIELD_NAME];
+        fieldVal =
+          typeof fieldVal == "boolean"
+            ? fieldVal
+              ? "true"
+              : "false"
+            : fieldVal;
+        processedData[rows[i].FIELD_NAME] = rows[i].ID;
       }
       resolve({
         processedData: processedData,
