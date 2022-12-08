@@ -299,7 +299,7 @@ const processEnumFields = async (connection, rows, fields) => {
   var errorFields = [];
   for (i in rows) {
     if (rows[i].TYPE == "enumeration") {
-      !fields[rows[i].LABEL] ? (fields[rows[i].LABEL] = null) : "";
+      fields[rows[i].LABEL] == undefined ? (fields[rows[i].LABEL] = null) : "";
       enumData['"' + rows[i].FIELD + '"'] =
         fields[rows[i].LABEL] == null
           ? null
@@ -328,14 +328,9 @@ const processEnumFields = async (connection, rows, fields) => {
 
 const mapEnumFields = (connection, enumData, enumFields) => {
   return new Promise(async (resolve, reject) => {
-    var booleanFields = [];
-    Object.keys(enumFields).map((field) => {
-      if (typeof enumFields[field] == "boolean")
-        booleanFields[field] = enumFields[field];
-    });
     var fields = Object.keys(enumData).toString();
     var values = Object.values(enumData).toString();
-    var query = `SELECT f.FIELD_NAME,value,e.ID from b_user_field_enum e INNER JOIN b_user_field f ON e.user_field_id = f.id WHERE f.field_name IN (${fields}) and label_value IN (${values})`;
+    var query = `SELECT f.FIELD_NAME,label_value,e.ID from b_user_field_enum e INNER JOIN b_user_field f ON e.user_field_id = f.id WHERE f.field_name IN (${fields}) and label_value IN (${values})`;
     connection.query(query, (err, rows) => {
       if (err) reject(err);
       var processedData = [];
@@ -360,7 +355,9 @@ const mapEnumFields = (connection, enumData, enumFields) => {
               ? "true"
               : "false"
             : fieldVal;
-        processedData[rows[i].FIELD_NAME] = rows[i].ID;
+        if (fieldVal.toUpperCase() === rows[i].label_value.toUpperCase())
+          processedData[rows[i].FIELD_NAME] = rows[i].ID;
+        else errorProcessedData[rows[i].FIELD_NAME] = 1;
       }
       resolve({
         processedData: processedData,

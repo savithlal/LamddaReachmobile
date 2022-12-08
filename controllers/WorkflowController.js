@@ -50,7 +50,10 @@ const mapWorkflow = async (connection, id, workflowData, fieldCopy) => {
         operator = temp[0];
         let field = temp[1].split("'")[1];
         if (field) {
-          let str = `"${fieldCopy[data[key].Field]}" ${operator}= "${field}"`;
+          var fieldVal = fieldCopy[data[key].Field];
+          var r = new RegExp(/"/, "g");
+          fieldVal = fieldVal.replace(r, "");
+          let str = `"${fieldVal}" ${operator}= "${field}"`;
           try {
             if (eval(str) === true) {
               var data = await getWorkflow(connection, id, processId);
