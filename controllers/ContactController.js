@@ -335,7 +335,7 @@ const mapEnumFields = (connection, enumData, enumFields) => {
       if (err) reject(err);
       var processedData = [];
       var errorProcessedData = [];
-      if (rows.length !== Object.keys(enumData).length) {
+      if (rows.length < Object.keys(enumData).length) {
         errorProcessedData = enumFields;
         for (i in rows) {
           var temp = Object.keys(enumFields);
@@ -361,7 +361,8 @@ const mapEnumFields = (connection, enumData, enumFields) => {
           rows[i].label_value.toUpperCase()
         )
           processedData[rows[i].FIELD_NAME] = rows[i].ID;
-        else errorProcessedData[rows[i].FIELD_NAME] = 1;
+        else if (!processedData[rows[i].FIELD_NAME])
+          errorProcessedData[rows[i].FIELD_NAME] = 1;
       }
       resolve({
         processedData: processedData,
