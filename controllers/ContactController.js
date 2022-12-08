@@ -357,11 +357,13 @@ const mapEnumFields = (connection, enumData, enumFields) => {
               : "false"
             : fieldVal;
         if (
-          fieldVal.toString().toUpperCase() ===
-          rows[i].label_value.toUpperCase()
+          fieldVal.toString().toUpperCase() == rows[i].label_value.toUpperCase()
         )
           processedData[rows[i].FIELD_NAME] = rows[i].ID;
-        else if (!processedData[rows[i].FIELD_NAME])
+        else if (
+          processedData.length &&
+          processedData[rows[i].FIELD_NAME] == undefined
+        )
           errorProcessedData[rows[i].FIELD_NAME] = 1;
       }
       resolve({
