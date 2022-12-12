@@ -53,10 +53,10 @@ const sql = async (
     }
     if (fields["PHONE"] !== undefined) {
       sqlData.push(
-        `UPDATE b_crm_field_multi SET VALUE="${fields.PHONE}" WHERE ELEMENT_ID=${id} AND TYPE_ID="PHONE"`
+        `UPDATE b_crm_field_multi SET VALUE="+91${fields.PHONE}" WHERE ELEMENT_ID=${id} AND TYPE_ID="PHONE"`
       );
       sqlData.push(
-        `UPDATE b_crm_dp_comm_mcd SET VALUE="${fields.PHONE}" WHERE ENTITY_ID=${id} AND TYPE="PHONE"`
+        `UPDATE b_crm_dp_comm_mcd SET VALUE="+91${fields.PHONE}" WHERE ENTITY_ID=${id} AND TYPE="PHONE"`
       );
     }
     if (fields["EMAIL"] !== undefined) {
@@ -71,19 +71,25 @@ const sql = async (
   });
 };
 
-const execute = async (connection, sql, flag, data) => {
+const execute = async (connection, sql, type, flag, data) => {
   return new Promise((resolve, reject) => {
+    if (type !== "workflow")
+      sql[
+        "b_crm_access_attr_contact"
+      ] = `INSERT INTO b_crm_access_attr_contact (CATEGORY_ID,USER_ID,IS_OPENED,IS_ALWAYS_READABLE,PROGRESS_STEP,ENTITY_ID) VALUES (0,1,'Y','N','','--CONTACT_ID--')`;
     if (flag) {
       delete sql.b_crm_contact;
       delete sql.b_crm_dynamic_items_179;
     }
     for (i in sql) {
       let query = sql[i];
-      if (flag) {
+      if ((flag || i == "b_crm_access_attr_contact") && type !== "workflow") {
         var r = new RegExp(data.search.contactId, "g");
         query = query.replace(r, data.replace.contactId);
-        var r = new RegExp(data.search.spaId, "g");
-        query = query.replace(r, data.replace.spaId);
+        if (data.search.spaId) {
+          var r = new RegExp(data.search.spaId, "g");
+          query = query.replace(r, data.replace.spaId);
+        }
       }
       connection.query(query, function (err, rows) {
         if (err) reject(err);
@@ -161,10 +167,10 @@ const buildSql = (response, fields, staticValues) => {
           table
         ].toString()}) VALUES (`;
         if (table == "b_crm_field_multi") {
-          sql += `"CONTACT","--CONTACT_ID--","PHONE","WORK","PHONE_WORK","${fields.PHONE}"),
+          sql += `"CONTACT","--CONTACT_ID--","PHONE","WORK","PHONE_WORK","+91${fields.PHONE}"),
           ("CONTACT","--CONTACT_ID--","EMAIL","WORK","EMAIL_WORK","${fields.EMAIL}"`;
         } else if (table == "b_crm_dp_comm_mcd") {
-          sql += `3,"--CONTACT_ID--","PHONE","${fields.PHONE}"),
+          sql += `3,"--CONTACT_ID--","PHONE","+91${fields.PHONE}"),
           (3,"--CONTACT_ID--","EMAIL","${fields.EMAIL}"`;
         } else {
           for (let key in tableFields) {
@@ -232,6 +238,7 @@ const mapFields = async (connection, res, query, fields) => {
       if (err) reject(err);
       else {
         var codes = {};
+        var data = {};
         for (var i in rows) {
           codes[rows[i].LABEL] = rows[i].FIELD;
         }
@@ -242,8 +249,13 @@ const mapFields = async (connection, res, query, fields) => {
           }
           __return(res, {}, "UNKNOWN_FIELD: " + errFields.toString(), 422);
         } else {
-          var data = {};
           var processedData = await processEnumFields(connection, rows, fields);
+          if (processedData.status == true && processedData.data == false) {
+            for (i in rows) {
+              data[rows[i].FIELD.toUpperCase()] = fields[rows[i].LABEL];
+            }
+            resolve({ status: true, data: data });
+          }
           if (!processedData.status === true)
             __return(
               res,
@@ -297,8 +309,10 @@ const processEnumFields = async (connection, rows, fields) => {
   var enumData = {};
   var enumFields = {};
   var errorFields = [];
+  var enumFlag = false;
   for (i in rows) {
     if (rows[i].TYPE == "enumeration") {
+      enumFlag = true;
       fields[rows[i].LABEL] == undefined ? (fields[rows[i].LABEL] = null) : "";
       enumData['"' + rows[i].FIELD + '"'] =
         fields[rows[i].LABEL] == null
@@ -307,6 +321,7 @@ const processEnumFields = async (connection, rows, fields) => {
       enumFields[rows[i].FIELD] = fields[rows[i].LABEL];
     }
   }
+  if (!enumFlag) return { status: true, data: false };
   if (errorFields.length) return { status: false, data: errorFields };
   else {
     var enumDataArr;

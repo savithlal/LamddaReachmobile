@@ -131,7 +131,14 @@ router.put("/", auth, async function (req, res) {
       );
     })
     .then(async (sql) => {
-      return await controller.execute(connection, sql, false);
+      return await controller.execute(connection, sql, "update", false, {
+        search: {
+          contactId: "--CONTACT_ID--",
+        },
+        replace: {
+          contactId: id,
+        },
+      });
     })
     .then(async (response) => {
       return await workflow.getBusinessProcess(
@@ -385,7 +392,7 @@ router.post("/", auth, async function (req, res) {
       return response;
     })
     .then(async (response) => {
-      return await controller.execute(connection, response, true, {
+      return await controller.execute(connection, response, "create", true, {
         search: {
           contactId: "--CONTACT_ID--",
           spaId: "--SPA_ID--",

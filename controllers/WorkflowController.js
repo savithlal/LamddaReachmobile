@@ -81,7 +81,7 @@ const getData = async (connection, id, query, fieldCopy, fields) => {
     query = `SELECT bp_id,NAME FROM config cf INNER JOIN b_bp_workflow_template wf ON cf.bp_id = wf.ID WHERE cf.field REGEXP ${fields}`;
     startData = await getStartWorkflow(connection, query);
     var response = await auditWorkflow(connection, id, startData);
-    await controller.execute(connection, [response]);
+    await controller.execute(connection, [response], "workflow");
     resolve({
       response: {
         contactId: id,
