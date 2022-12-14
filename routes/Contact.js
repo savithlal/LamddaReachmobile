@@ -4,7 +4,6 @@ const controller = require("../controllers/ContactController");
 const workflow = require("../controllers/WorkflowController");
 const auth = require("./Verify");
 const axios = require("axios").default;
-var config = require("../config.json");
 
 router.get("/:id", auth, async function (req, res) {
   const instance = req.instance;
