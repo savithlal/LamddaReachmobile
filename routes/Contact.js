@@ -3,6 +3,8 @@ var router = express.Router();
 const controller = require("../controllers/ContactController");
 const workflow = require("../controllers/WorkflowController");
 const auth = require("./Verify");
+const axios = require("axios").default;
+var config = require("../config.json");
 
 router.get("/:id", auth, async function (req, res) {
   const instance = req.instance;
@@ -404,6 +406,16 @@ router.post("/", auth, async function (req, res) {
       });
     })
     .then(async (response) => {
+      var api = `https://crm-${
+        instance == "dev" ? "flow" : "stage"
+      }.reachmobile.com/rest/1/ua1t7bzxzl9a6yh0/crm.contact.update`;
+      var params = {
+        ID: contactId,
+        fields: {
+          ASSIGNED_BY_ID: 1,
+        },
+      };
+      axios.post(api, params).catch((err) => console.log(err));
       controller.__return(
         res,
         { CONTACT_ID: contactId },
