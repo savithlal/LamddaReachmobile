@@ -7,11 +7,11 @@
     - cd /[ therepoyoucloned ]
     - npm install (installing all the dependencies)
     - edit config.js (consisting all the environment variables)
-        - HOST     : Database host
-        - USER     : Database user
-        - PASSWORD : Database password
-        - DB       : Database db
-        - PORT     : Application port
+      - HOST : Database host
+      - USER : Database user
+      - PASSWORD : Database password
+      - DB : Database db
+      - PORT : Application port
     - npm run dev
     - Your app is now running at `http://localhost@PORT`!
 
