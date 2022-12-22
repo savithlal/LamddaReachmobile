@@ -378,7 +378,6 @@ router.post("/", auth, async function (req, res) {
       return await controller.getHead(res, fields, errorFields, instance);
     })
     .then(async (head) => {
-      console.log(head);
       staticValues.b_crm_contact.ASSIGNED_BY_ID = head;
       return await mapTables(tables, head);
     })
