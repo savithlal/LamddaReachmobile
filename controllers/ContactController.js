@@ -1,3 +1,4 @@
+var config = require("../config.json");
 const sql = async (
   res,
   tables,
@@ -108,17 +109,13 @@ const __return = async (res, data, message, status) => {
   await res.status(status).json(response);
 };
 
-const getHead = async (connection, res, fields, errorFields) => {
-  let query = `SELECT sec1.UF_HEAD FROM b_iblock_section sec JOIN b_uts_iblock_3_section sec1  WHERE sec.ID=sec1.VALUE_ID AND NAME="${fields["UF_CRM_1337999932852"]}"`;
+const getHead = async (res, fields, errorFields, instance) => {
   return new Promise((resolve, reject) => {
     if (errorFields.length) {
       __return(res, {}, "REQUIRED_FIELDS: " + errorFields.toString(), 422);
       return false;
     }
-    connection.query(query, function (err, rows) {
-      if (err) reject(err);
-      resolve(rows.length && rows[0].UF_HEAD ? rows[0].UF_HEAD : 1);
-    });
+    resolve(config[instance].RESPONSIBLE[fields["UF_CRM_1337999932852"]]);
   });
 };
 

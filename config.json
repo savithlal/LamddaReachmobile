@@ -14,6 +14,10 @@
       "ReachMobile": "https://crm-dev-lb.reachmobileplatform.com/rest/1/ua1t7bzxzl9a6yh0/",
       "default": "https://crm-dev-lb.reachmobileplatform.com/rest/1/ua1t7bzxzl9a6yh0/"
     },
+    "RESPONSIBLE": {
+      "wow": 1914,
+      "reach": 1915
+    },
     "ENDPOINTS": {
       "START": "bizproc.workflow.start",
       "TERMINATE": "bizproc.workflow.terminate"
@@ -29,6 +33,10 @@
     "BRANDS": {
       "ReachMobile": "https://crm-stage-lb.reachmobileplatform.com/rest/1/ua1t7bzxzl9a6yh0/",
       "default": "https://crm-stage-lb.reachmobileplatform.com/rest/1/ua1t7bzxzl9a6yh0/"
+    },
+    "RESPONSIBLE": {
+      "wow": 715,
+      "reach": 716
     },
     "ENDPOINTS": {
       "START": "bizproc.workflow.start",
