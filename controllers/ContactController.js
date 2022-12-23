@@ -115,7 +115,7 @@ const getHead = async (res, fields, errorFields, instance) => {
       __return(res, {}, "REQUIRED_FIELDS: " + errorFields.toString(), 422);
       return false;
     }
-    resolve(config[instance].RESPONSIBLE[fields["UF_CRM_1337999932852"]]);
+    resolve(config[instance]["RESPONSIBLE"][fields["UF_CRM_1337999932852"]]);
   });
 };
 
