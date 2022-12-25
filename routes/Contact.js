@@ -411,7 +411,7 @@ router.post("/", auth, async function (req, res) {
       var params = {
         ID: contactId,
         fields: {
-          ASSIGNED_BY_ID: 1,
+          ASSIGNED_BY_ID: staticValues.b_crm_contact.ASSIGNED_BY_ID,
         },
       };
       axios.post(api, params).catch((err) => console.log(err));
