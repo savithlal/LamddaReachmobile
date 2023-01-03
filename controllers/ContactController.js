@@ -164,11 +164,13 @@ const buildSql = (response, fields, staticValues) => {
           table
         ].toString()}) VALUES (`;
         if (table == "b_crm_field_multi") {
-          sql += `"CONTACT","--CONTACT_ID--","PHONE","WORK","PHONE_WORK","+91${fields.PHONE}"),
-          ("CONTACT","--CONTACT_ID--","EMAIL","WORK","EMAIL_WORK","${fields.EMAIL}"`;
+          sql += `"CONTACT","--CONTACT_ID--","EMAIL","WORK","EMAIL_WORK","${fields.EMAIL}"`;
+          if (fields.PHONE !== undefined)
+            sql += `),("CONTACT","--CONTACT_ID--","PHONE","WORK","PHONE_WORK","+91${fields.PHONE}"`;
         } else if (table == "b_crm_dp_comm_mcd") {
-          sql += `3,"--CONTACT_ID--","PHONE","+91${fields.PHONE}"),
-          (3,"--CONTACT_ID--","EMAIL","${fields.EMAIL}"`;
+          sql += `3,"--CONTACT_ID--","EMAIL","${fields.EMAIL}"`;
+          if (fields.PHONE !== undefined)
+            sql += `),(3,"--CONTACT_ID--","PHONE","+91${fields.PHONE}"`;
         } else {
           for (let key in tableFields) {
             var field = tableFields[key];

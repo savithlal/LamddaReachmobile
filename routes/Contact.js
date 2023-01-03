@@ -105,7 +105,6 @@ router.put("/", auth, async function (req, res) {
         "NAME",
         "LAST_NAME",
         "EMAIL",
-        "PHONE",
         "UF_CRM_1337999932852",
       ];
       await controller.validate(res, fields, reqFields);
@@ -168,7 +167,6 @@ router.post("/", auth, async function (req, res) {
       "CREATED_BY_ID",
       "ASSIGNED_BY_ID",
       "HAS_EMAIL",
-      "HAS_PHONE",
     ],
     b_crm_dynamic_items_179: [
       "TITLE",
@@ -217,7 +215,6 @@ router.post("/", auth, async function (req, res) {
       CREATED_BY_ID: 1,
       ASSIGNED_BY_ID: "",
       HAS_EMAIL: "Y",
-      HAS_PHONE: "Y",
       DATE_CREATE: date,
     },
     b_crm_dynamic_items_179: {
@@ -268,7 +265,6 @@ router.post("/", auth, async function (req, res) {
     "NAME",
     "LAST_NAME",
     "EMAIL",
-    "PHONE",
     "UF_CRM_1337999932852",
   ];
   if (!req.body.properties || !Object.keys(req.body.properties).length) {
